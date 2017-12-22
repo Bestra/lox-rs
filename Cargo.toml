@@ -1,0 +1,7 @@
+[package]
+name = "lox"
+version = "0.1.0"
+authors = ["Chris Westra <cwestra@gmail.com>"]
+
+[dependencies]
+rprompt = "1.0"
