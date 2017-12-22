@@ -33,7 +33,7 @@ enum TokenType {
 enum TokenLiteral {
     String(String),
     Number(f64),
-    None
+    None,
 }
 
 #[derive(Debug)]
@@ -55,14 +55,14 @@ struct Scanner {
 fn is_digit(c: char) -> bool {
     match c {
         '0'...'9' => true,
-        _ => false
+        _ => false,
     }
 }
 
 fn is_alpha(c: char) -> bool {
     match c {
         'a'...'z' | 'A'...'Z' | '_' => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -78,7 +78,12 @@ impl Scanner {
             self.scan_token();
         }
 
-        let end = Token {token_type: TokenType::Eof, lexeme: "".to_string(), literal: TokenLiteral::None, line: self.line};
+        let end = Token {
+            token_type: TokenType::Eof,
+            lexeme: "".to_string(),
+            literal: TokenLiteral::None,
+            line: self.line,
+        };
         self.tokens.push(end);
         self
     }
@@ -101,21 +106,37 @@ impl Scanner {
             ';' => self.add_token(TokenType::Semicolon, TokenLiteral::None),
             '*' => self.add_token(TokenType::Star, TokenLiteral::None),
             '!' => {
-                let t = if self.match_token('=') { TokenType::BangEqual } else { TokenType::Bang };
+                let t = if self.match_token('=') {
+                    TokenType::BangEqual
+                } else {
+                    TokenType::Bang
+                };
                 self.add_token(t, TokenLiteral::None)
-            },
+            }
             '=' => {
-                let t = if self.match_token('=') { TokenType::EqualEqual } else { TokenType::Equal };
+                let t = if self.match_token('=') {
+                    TokenType::EqualEqual
+                } else {
+                    TokenType::Equal
+                };
                 self.add_token(t, TokenLiteral::None)
-            },
+            }
             '<' => {
-                let t = if self.match_token('=') { TokenType::LessEqual } else { TokenType::Less };
+                let t = if self.match_token('=') {
+                    TokenType::LessEqual
+                } else {
+                    TokenType::Less
+                };
                 self.add_token(t, TokenLiteral::None)
-            },
+            }
             '>' => {
-                let t = if self.match_token('=') { TokenType::GreaterEqual } else { TokenType::Greater };
+                let t = if self.match_token('=') {
+                    TokenType::GreaterEqual
+                } else {
+                    TokenType::Greater
+                };
                 self.add_token(t, TokenLiteral::None)
-            },
+            }
 
             '/' => {
                 if self.match_token('/') {
@@ -157,11 +178,16 @@ impl Scanner {
 
     fn string(&mut self) -> () {
         while self.peek() != '"' && !self.is_at_end() {
-            if self.peek() == '\n' { self.line = self.line + 1; }
+            if self.peek() == '\n' {
+                self.line = self.line + 1;
+            }
             self.advance();
         }
 
-        if self.is_at_end() { eprintln!("Scanner error: unterminated string"); process::exit(1); }
+        if self.is_at_end() {
+            eprintln!("Scanner error: unterminated string");
+            process::exit(1);
+        }
 
         self.advance(); // get the closing '"'
         let start = self.start as usize + 1;
@@ -175,7 +201,12 @@ impl Scanner {
         let start = self.start as usize;
         let current = self.current as usize;
         let lexeme = &self.source[start..current];
-        let token = Token {token_type: t, lexeme: lexeme.to_string(), literal: l, line: self.line};
+        let token = Token {
+            token_type: t,
+            lexeme: lexeme.to_string(),
+            literal: l,
+            line: self.line,
+        };
         self.tokens.push(token);
     }
 
@@ -191,7 +222,7 @@ impl Scanner {
             self.source.chars().nth(self.current as usize).unwrap()
         }
     }
-    
+
     fn peek_next(&self) -> char {
         let pos = self.current as usize + 1;
         if pos >= self.source.len() {
@@ -201,10 +232,14 @@ impl Scanner {
         }
     }
 
-    fn match_token(&mut self,expected: char) -> bool {
-        if self.is_at_end() { return false }
+    fn match_token(&mut self, expected: char) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
         let current_char = self.source.chars().nth(self.current as usize).unwrap();
-        if current_char != expected { return false }
+        if current_char != expected {
+            return false;
+        }
 
         self.current = self.current + 1;
         true
@@ -216,7 +251,7 @@ impl Scanner {
             tokens: vec![],
             start: 0,
             current: 0,
-            line: 1
+            line: 1,
         }
     }
 }
