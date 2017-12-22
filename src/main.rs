@@ -1,6 +1,8 @@
 extern crate rprompt;
+use std::process;
+use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 enum TokenType {
     Eof,
     LeftParen,
@@ -13,29 +15,32 @@ enum TokenType {
     Plus,
     Semicolon,
     Star,
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+    Slash,
+    String,
+    Number,
+    Unexpected,
 }
 
-fn token_type_from_char(c: char) -> TokenType {
-    match c {
-        '(' => TokenType::LeftParen,
-        ')' => TokenType::RightParen,
-        '{' => TokenType::LeftBrace,
-        '}' => TokenType::RightBrace,
-        ',' => TokenType::Comma,
-        '.' => TokenType::Dot,
-        '-' => TokenType::Minus,
-        '+' => TokenType::Plus,
-        ';' => TokenType::Semicolon,
-        '*' => TokenType::Star,
-        _ => TokenType::Eof,
-    }
+#[derive(Debug)]
+enum TokenLiteral {
+    String(String),
+    Number(f64),
+    None
 }
 
 #[derive(Debug)]
 struct Token {
     lexeme: String,
     line: u64,
-    literal: String,
+    literal: TokenLiteral,
     token_type: TokenType,
 }
 
@@ -47,6 +52,25 @@ struct Scanner {
     line: u64,
 }
 
+fn is_digit(c: char) -> bool {
+    match c {
+        '0'...'9' => true,
+        _ => false
+    }
+}
+
+fn is_alpha(c: char) -> bool {
+    match c {
+        'a'...'z' | 'A'...'Z' | '_' => true,
+        _ => false
+    }
+}
+
+fn is_alphanumeric(c: char) -> bool {
+    is_alpha(c) || is_digit(c)
+}
+
+
 impl Scanner {
     fn scan_tokens(&mut self) -> &mut Scanner {
         while !self.is_at_end() {
@@ -54,7 +78,7 @@ impl Scanner {
             self.scan_token();
         }
 
-        let end = Token {token_type: TokenType::Eof, lexeme: "".to_string(), literal: "".to_string(), line: self.line};
+        let end = Token {token_type: TokenType::Eof, lexeme: "".to_string(), literal: TokenLiteral::None, line: self.line};
         self.tokens.push(end);
         self
     }
@@ -65,14 +89,93 @@ impl Scanner {
 
     fn scan_token(&mut self) -> () {
         let c = self.advance();
-        self.add_token(token_type_from_char(c))
+        match c {
+            '(' => self.add_token(TokenType::LeftParen, TokenLiteral::None),
+            ')' => self.add_token(TokenType::RightParen, TokenLiteral::None),
+            '{' => self.add_token(TokenType::LeftBrace, TokenLiteral::None),
+            '}' => self.add_token(TokenType::RightBrace, TokenLiteral::None),
+            ',' => self.add_token(TokenType::Comma, TokenLiteral::None),
+            '.' => self.add_token(TokenType::Dot, TokenLiteral::None),
+            '-' => self.add_token(TokenType::Minus, TokenLiteral::None),
+            '+' => self.add_token(TokenType::Plus, TokenLiteral::None),
+            ';' => self.add_token(TokenType::Semicolon, TokenLiteral::None),
+            '*' => self.add_token(TokenType::Star, TokenLiteral::None),
+            '!' => {
+                let t = if self.match_token('=') { TokenType::BangEqual } else { TokenType::Bang };
+                self.add_token(t, TokenLiteral::None)
+            },
+            '=' => {
+                let t = if self.match_token('=') { TokenType::EqualEqual } else { TokenType::Equal };
+                self.add_token(t, TokenLiteral::None)
+            },
+            '<' => {
+                let t = if self.match_token('=') { TokenType::LessEqual } else { TokenType::Less };
+                self.add_token(t, TokenLiteral::None)
+            },
+            '>' => {
+                let t = if self.match_token('=') { TokenType::GreaterEqual } else { TokenType::Greater };
+                self.add_token(t, TokenLiteral::None)
+            },
+
+            '/' => {
+                if self.match_token('/') {
+                    while self.peek() != '\n' && !self.is_at_end() {
+                        self.advance();
+                    }
+                } else {
+                    self.add_token(TokenType::Slash, TokenLiteral::None)
+                }
+            },
+            '"' => self.string(),
+
+            ' ' | '\r' | '\t' => (),
+            '\n' => self.line = self.line + 1,
+            c if is_digit(c) => self.number(),
+            _ => self.add_token(TokenType::Unexpected, TokenLiteral::None),
+        }
     }
 
-    fn add_token(&mut self, t: TokenType) -> () {
+    fn number(&mut self) -> () {
+        while is_digit(self.peek()) {
+            self.advance();
+        }
+
+        if self.peek() == '.' && is_digit(self.peek_next()) {
+            // consume the "."
+            self.advance();
+        }
+
+        while is_digit(self.peek()) {
+            self.advance();
+        }
+
+        let value = &self.source.clone()[(self.start as usize)..(self.current as usize)];
+        let num = f64::from_str(value).unwrap();
+        self.add_token(TokenType::Number, TokenLiteral::Number(num))
+    }
+
+
+    fn string(&mut self) -> () {
+        while self.peek() != '"' && !self.is_at_end() {
+            if self.peek() == '\n' { self.line = self.line + 1; }
+            self.advance();
+        }
+
+        if self.is_at_end() { eprintln!("Scanner error: unterminated string"); process::exit(1); }
+
+        self.advance(); // get the closing '"'
+        let start = self.start as usize + 1;
+        let current = self.current as usize - 1;
+
+        let value = &self.source.clone()[start..current];
+        self.add_token(TokenType::String, TokenLiteral::String(value.to_string()));
+    }
+
+    fn add_token(&mut self, t: TokenType, l: TokenLiteral) -> () {
         let start = self.start as usize;
         let current = self.current as usize;
         let lexeme = &self.source[start..current];
-        let token = Token {token_type: t, lexeme: lexeme.to_string(), literal: "".to_string(), line: self.line};
+        let token = Token {token_type: t, lexeme: lexeme.to_string(), literal: l, line: self.line};
         self.tokens.push(token);
     }
 
@@ -80,19 +183,68 @@ impl Scanner {
         self.current = self.current + 1;
         self.source.chars().nth(self.current as usize - 1).unwrap()
     }
+
+    fn peek(&self) -> char {
+        if self.is_at_end() {
+            '\0'
+        } else {
+            self.source.chars().nth(self.current as usize).unwrap()
+        }
+    }
+    
+    fn peek_next(&self) -> char {
+        let pos = self.current as usize + 1;
+        if pos >= self.source.len() {
+            '\0'
+        } else {
+            self.source.chars().nth(pos).unwrap()
+        }
+    }
+
+    fn match_token(&mut self,expected: char) -> bool {
+        if self.is_at_end() { return false }
+        let current_char = self.source.chars().nth(self.current as usize).unwrap();
+        if current_char != expected { return false }
+
+        self.current = self.current + 1;
+        true
+    }
+
+    fn new(source: String) -> Scanner {
+        Scanner {
+            source: source,
+            tokens: vec![],
+            start: 0,
+            current: 0,
+            line: 1
+        }
+    }
 }
 
 fn main() {
     let input = rprompt::prompt_reply_stdout(">").unwrap();
 
-    let mut scanner = Scanner {
-        source: input,
-        tokens: vec![],
-        start: 0,
-        current: 0,
-        line: 1
-    };
-
+    let mut scanner = Scanner::new(input);
     scanner.scan_tokens();
     println!("{:?}", scanner.tokens);
+}
+
+#[cfg(test)]
+mod tests {
+    use Scanner;
+    use TokenType;
+    fn check_token_type(s: &str, tt: TokenType) {
+        let mut scanner = Scanner::new(s.to_string());
+        scanner.scan_tokens();
+        let t = scanner.tokens.iter().nth(0).unwrap();
+        assert_eq!(t.token_type, tt);
+    }
+    #[test]
+    fn parses_number() {
+        check_token_type("12.5", TokenType::Number)
+    }
+    #[test]
+    fn parses_string() {
+        check_token_type("\"cool\"", TokenType::String)
+    }
 }
