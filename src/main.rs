@@ -26,7 +26,46 @@ enum TokenType {
     Slash,
     String,
     Number,
+    Identifier,
     Unexpected,
+    And,
+    Class,
+    Else,
+    False,
+    For,
+    Fun,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,   
+}
+
+fn get_keyword(s: &str) -> TokenType {
+    match s {
+        "and" =>    TokenType::And,
+        "class" =>  TokenType::Class,
+        "else" =>   TokenType::Else,
+        "false" =>  TokenType::False,
+        "for" =>    TokenType::For,
+        "fun" =>    TokenType::Fun,
+        "if" =>     TokenType::If,
+        "nil" =>    TokenType::Nil,
+        "or" =>     TokenType::Or,
+        "print" =>  TokenType::Print,
+        "return" => TokenType::Return,
+        "super" =>  TokenType::Super,
+        "this" =>   TokenType::This,
+        "true" =>   TokenType::True,
+        "var" =>    TokenType::Var,
+        "while" =>  TokenType::While,
+        _ => TokenType::Identifier,
+    }
 }
 
 #[derive(Debug)]
@@ -146,14 +185,27 @@ impl Scanner {
                 } else {
                     self.add_token(TokenType::Slash, TokenLiteral::None)
                 }
-            },
+            }
             '"' => self.string(),
 
             ' ' | '\r' | '\t' => (),
             '\n' => self.line = self.line + 1,
             c if is_digit(c) => self.number(),
+            c if is_alpha(c) => {
+                while is_alphanumeric(self.peek()) {
+                    self.advance();
+                }
+
+                let text = &self.current_substring();
+
+                self.add_token(get_keyword(text), TokenLiteral::None)
+            }
             _ => self.add_token(TokenType::Unexpected, TokenLiteral::None),
         }
+    }
+
+    fn current_substring(&self)  -> String {
+        self.source.clone()[(self.start as usize)..(self.current as usize)].to_string()
     }
 
     fn number(&mut self) -> () {
