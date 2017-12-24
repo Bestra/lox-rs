@@ -2,94 +2,6 @@ extern crate rprompt;
 use std::process;
 use std::str::FromStr;
 
-#[derive(Debug,PartialEq)]
-enum TokenType {
-    Eof,
-    LeftParen,
-    RightParen,
-    LeftBrace,
-    RightBrace,
-    Comma,
-    Dot,
-    Minus,
-    Plus,
-    Semicolon,
-    Star,
-    Bang,
-    BangEqual,
-    Equal,
-    EqualEqual,
-    Less,
-    LessEqual,
-    Greater,
-    GreaterEqual,
-    Slash,
-    String,
-    Number,
-    Identifier,
-    Unexpected,
-    And,
-    Class,
-    Else,
-    False,
-    For,
-    Fun,
-    If,
-    Nil,
-    Or,
-    Print,
-    Return,
-    Super,
-    This,
-    True,
-    Var,
-    While,   
-}
-
-fn get_keyword(s: &str) -> TokenType {
-    match s {
-        "and" =>    TokenType::And,
-        "class" =>  TokenType::Class,
-        "else" =>   TokenType::Else,
-        "false" =>  TokenType::False,
-        "for" =>    TokenType::For,
-        "fun" =>    TokenType::Fun,
-        "if" =>     TokenType::If,
-        "nil" =>    TokenType::Nil,
-        "or" =>     TokenType::Or,
-        "print" =>  TokenType::Print,
-        "return" => TokenType::Return,
-        "super" =>  TokenType::Super,
-        "this" =>   TokenType::This,
-        "true" =>   TokenType::True,
-        "var" =>    TokenType::Var,
-        "while" =>  TokenType::While,
-        _ => TokenType::Identifier,
-    }
-}
-
-#[derive(Debug)]
-enum TokenLiteral {
-    String(String),
-    Number(f64),
-    None,
-}
-
-#[derive(Debug)]
-struct Token {
-    lexeme: String,
-    line: u64,
-    literal: TokenLiteral,
-    token_type: TokenType,
-}
-
-struct Scanner {
-    source: String,
-    tokens: Vec<Token>,
-    start: u64,
-    current: u64,
-    line: u64,
-}
 
 fn is_digit(c: char) -> bool {
     match c {
@@ -109,6 +21,98 @@ fn is_alphanumeric(c: char) -> bool {
     is_alpha(c) || is_digit(c)
 }
 
+mod token {
+    #[derive(Debug,PartialEq)]
+    pub enum TokenType {
+        Eof,
+        LeftParen,
+        RightParen,
+        LeftBrace,
+        RightBrace,
+        Comma,
+        Dot,
+        Minus,
+        Plus,
+        Semicolon,
+        Star,
+        Bang,
+        BangEqual,
+        Equal,
+        EqualEqual,
+        Less,
+        LessEqual,
+        Greater,
+        GreaterEqual,
+        Slash,
+        String,
+        Number,
+        Identifier,
+        Unexpected,
+        And,
+        Class,
+        Else,
+        False,
+        For,
+        Fun,
+        If,
+        Nil,
+        Or,
+        Print,
+        Return,
+        Super,
+        This,
+        True,
+        Var,
+        While,
+    }
+
+    pub fn get_keyword(s: &str) -> TokenType {
+        match s {
+            "and" =>    TokenType::And,
+            "class" =>  TokenType::Class,
+            "else" =>   TokenType::Else,
+            "false" =>  TokenType::False,
+            "for" =>    TokenType::For,
+            "fun" =>    TokenType::Fun,
+            "if" =>     TokenType::If,
+            "nil" =>    TokenType::Nil,
+            "or" =>     TokenType::Or,
+            "print" =>  TokenType::Print,
+            "return" => TokenType::Return,
+            "super" =>  TokenType::Super,
+            "this" =>   TokenType::This,
+            "true" =>   TokenType::True,
+            "var" =>    TokenType::Var,
+            "while" =>  TokenType::While,
+            _ => TokenType::Identifier,
+        }
+    }
+
+    #[derive(Debug)]
+    pub enum TokenLiteral {
+        String(String),
+        Number(f64),
+        None,
+    }
+
+    #[derive(Debug)]
+    pub struct Token {
+        pub lexeme: String,
+        pub line: u64,
+        pub literal: TokenLiteral,
+        pub token_type: TokenType,
+    }
+}
+
+use token::{Token,TokenType,TokenLiteral};
+
+struct Scanner {
+    source: String,
+    tokens: Vec<Token>,
+    start: u64,
+    current: u64,
+    line: u64,
+}
 
 impl Scanner {
     fn scan_tokens(&mut self) -> &mut Scanner {
@@ -198,7 +202,7 @@ impl Scanner {
 
                 let text = &self.current_substring();
 
-                self.add_token(get_keyword(text), TokenLiteral::None)
+                self.add_token(token::get_keyword(text), TokenLiteral::None)
             }
             _ => self.add_token(TokenType::Unexpected, TokenLiteral::None),
         }
