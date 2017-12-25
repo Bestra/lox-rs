@@ -23,13 +23,12 @@ fn is_alphanumeric(c: char) -> bool {
     is_alpha(c) || is_digit(c)
 }
 
-
 pub struct Scanner {
-    pub source: String,
+    source: String,
     pub tokens: Vec<Token>,
-    pub start: u64,
-    pub current: u64,
-    pub line: u64,
+    start: usize,
+    current: usize,
+    line: usize,
 }
 
 impl Scanner {
@@ -50,7 +49,7 @@ impl Scanner {
     }
 
     fn is_at_end(&self) -> bool {
-        self.current as usize >= self.source.len()
+        self.current >= self.source.len()
     }
 
     fn scan_token(&mut self) -> () {
@@ -111,7 +110,7 @@ impl Scanner {
             '"' => self.string(),
 
             ' ' | '\r' | '\t' => (),
-            '\n' => self.line = self.line + 1,
+            '\n' => self.line += 1,
             c if is_digit(c) => self.number(),
             c if is_alpha(c) => {
                 while is_alphanumeric(self.peek()) {
@@ -127,7 +126,7 @@ impl Scanner {
     }
 
     fn current_substring(&self)  -> String {
-        self.source.clone()[(self.start as usize)..(self.current as usize)].to_string()
+        self.source.clone()[(self.start)..(self.current)].to_string()
     }
 
     fn number(&mut self) -> () {
@@ -144,7 +143,7 @@ impl Scanner {
             self.advance();
         }
 
-        let value = &self.source.clone()[(self.start as usize)..(self.current as usize)];
+        let value = &self.source.clone()[(self.start)..(self.current)];
         let num = f64::from_str(value).unwrap();
         self.add_token(TokenType::Number, TokenLiteral::Number(num))
     }
@@ -153,7 +152,7 @@ impl Scanner {
     fn string(&mut self) -> () {
         while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {
-                self.line = self.line + 1;
+                self.line += 1;
             }
             self.advance();
         }
@@ -164,16 +163,16 @@ impl Scanner {
         }
 
         self.advance(); // get the closing '"'
-        let start = self.start as usize + 1;
-        let current = self.current as usize - 1;
+        let start = self.start + 1;
+        let current = self.current - 1;
 
         let value = &self.source.clone()[start..current];
         self.add_token(TokenType::String, TokenLiteral::String(value.to_string()));
     }
 
     fn add_token(&mut self, t: TokenType, l: TokenLiteral) -> () {
-        let start = self.start as usize;
-        let current = self.current as usize;
+        let start = self.start;
+        let current = self.current;
         let lexeme = &self.source[start..current];
         let token = Token {
             token_type: t,
@@ -185,20 +184,20 @@ impl Scanner {
     }
 
     fn advance(&mut self) -> char {
-        self.current = self.current + 1;
-        self.source.chars().nth(self.current as usize - 1).unwrap()
+        self.current += 1;
+        self.source.chars().nth(self.current - 1).unwrap()
     }
 
     fn peek(&self) -> char {
         if self.is_at_end() {
             '\0'
         } else {
-            self.source.chars().nth(self.current as usize).unwrap()
+            self.source.chars().nth(self.current).unwrap()
         }
     }
 
     fn peek_next(&self) -> char {
-        let pos = self.current as usize + 1;
+        let pos = self.current + 1;
         if pos >= self.source.len() {
             '\0'
         } else {
@@ -210,12 +209,12 @@ impl Scanner {
         if self.is_at_end() {
             return false;
         }
-        let current_char = self.source.chars().nth(self.current as usize).unwrap();
+        let current_char = self.source.chars().nth(self.current).unwrap();
         if current_char != expected {
             return false;
         }
 
-        self.current = self.current + 1;
+        self.current += 1;
         true
     }
 

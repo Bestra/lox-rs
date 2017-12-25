@@ -74,7 +74,7 @@ pub enum TokenLiteral {
 #[derive(Debug)]
 pub struct Token {
     pub lexeme: String,
-    pub line: u64,
+    pub line: usize,
     pub literal: TokenLiteral,
     pub token_type: TokenType,
 }
