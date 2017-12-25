@@ -1,8 +1,8 @@
 use std::process;
 use std::str::FromStr;
 mod token;
-mod ast;
-
+pub mod ast;
+pub mod parser;
 use token::{Token, TokenLiteral, TokenType};
 
 fn is_digit(c: char) -> bool {
@@ -41,7 +41,7 @@ impl Scanner {
         let end = Token {
             token_type: TokenType::Eof,
             lexeme: "".to_string(),
-            literal: TokenLiteral::None,
+            literal: TokenLiteral::Nil,
             line: self.line,
         };
         self.tokens.push(end);
@@ -55,23 +55,23 @@ impl Scanner {
     fn scan_token(&mut self) -> () {
         let c = self.advance();
         match c {
-            '(' => self.add_token(TokenType::LeftParen, TokenLiteral::None),
-            ')' => self.add_token(TokenType::RightParen, TokenLiteral::None),
-            '{' => self.add_token(TokenType::LeftBrace, TokenLiteral::None),
-            '}' => self.add_token(TokenType::RightBrace, TokenLiteral::None),
-            ',' => self.add_token(TokenType::Comma, TokenLiteral::None),
-            '.' => self.add_token(TokenType::Dot, TokenLiteral::None),
-            '-' => self.add_token(TokenType::Minus, TokenLiteral::None),
-            '+' => self.add_token(TokenType::Plus, TokenLiteral::None),
-            ';' => self.add_token(TokenType::Semicolon, TokenLiteral::None),
-            '*' => self.add_token(TokenType::Star, TokenLiteral::None),
+            '(' => self.add_token(TokenType::LeftParen, TokenLiteral::Nil),
+            ')' => self.add_token(TokenType::RightParen, TokenLiteral::Nil),
+            '{' => self.add_token(TokenType::LeftBrace, TokenLiteral::Nil),
+            '}' => self.add_token(TokenType::RightBrace, TokenLiteral::Nil),
+            ',' => self.add_token(TokenType::Comma, TokenLiteral::Nil),
+            '.' => self.add_token(TokenType::Dot, TokenLiteral::Nil),
+            '-' => self.add_token(TokenType::Minus, TokenLiteral::Nil),
+            '+' => self.add_token(TokenType::Plus, TokenLiteral::Nil),
+            ';' => self.add_token(TokenType::Semicolon, TokenLiteral::Nil),
+            '*' => self.add_token(TokenType::Star, TokenLiteral::Nil),
             '!' => {
                 let t = if self.match_token('=') {
                     TokenType::BangEqual
                 } else {
                     TokenType::Bang
                 };
-                self.add_token(t, TokenLiteral::None)
+                self.add_token(t, TokenLiteral::Nil)
             }
             '=' => {
                 let t = if self.match_token('=') {
@@ -79,7 +79,7 @@ impl Scanner {
                 } else {
                     TokenType::Equal
                 };
-                self.add_token(t, TokenLiteral::None)
+                self.add_token(t, TokenLiteral::Nil)
             }
             '<' => {
                 let t = if self.match_token('=') {
@@ -87,7 +87,7 @@ impl Scanner {
                 } else {
                     TokenType::Less
                 };
-                self.add_token(t, TokenLiteral::None)
+                self.add_token(t, TokenLiteral::Nil)
             }
             '>' => {
                 let t = if self.match_token('=') {
@@ -95,7 +95,7 @@ impl Scanner {
                 } else {
                     TokenType::Greater
                 };
-                self.add_token(t, TokenLiteral::None)
+                self.add_token(t, TokenLiteral::Nil)
             }
 
             '/' => {
@@ -104,7 +104,7 @@ impl Scanner {
                         self.advance();
                     }
                 } else {
-                    self.add_token(TokenType::Slash, TokenLiteral::None)
+                    self.add_token(TokenType::Slash, TokenLiteral::Nil)
                 }
             }
             '"' => self.string(),
@@ -119,9 +119,9 @@ impl Scanner {
 
                 let text = &self.current_substring();
 
-                self.add_token(token::get_keyword(text), TokenLiteral::None)
+                self.add_token(token::get_keyword(text), TokenLiteral::Nil)
             }
-            _ => self.add_token(TokenType::Unexpected, TokenLiteral::None),
+            _ => self.add_token(TokenType::Unexpected, TokenLiteral::Nil),
         }
     }
 

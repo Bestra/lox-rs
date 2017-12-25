@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     Eof,
     LeftParen,
@@ -64,14 +64,15 @@ pub fn get_keyword(s: &str) -> TokenType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TokenLiteral {
     String(String),
     Number(f64),
-    None,
+    Bool(bool),
+    Nil,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub lexeme: String,
     pub line: usize,

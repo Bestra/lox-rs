@@ -36,5 +36,5 @@ pub fn pretty_print(e: Expr) -> String {
 
 fn parenthesize(tag: &str, exprs: Vec<Expr>) -> String {
     let inner_str: Vec<String> = exprs.into_iter().map(|e| pretty_print(e)).collect();
-    format!("{} {}", tag, inner_str.join(" "))
+    format!("({} {})", tag, inner_str.join(" "))
 }
