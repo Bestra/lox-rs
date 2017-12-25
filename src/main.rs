@@ -1,5 +1,5 @@
-extern crate rprompt;
 extern crate lox;
+extern crate rprompt;
 
 fn main() {
     let input = rprompt::prompt_reply_stdout(">").unwrap();

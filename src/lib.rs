@@ -2,8 +2,8 @@ use std::process;
 use std::str::FromStr;
 mod token;
 mod ast;
-use token::{Token,TokenType,TokenLiteral};
 
+use token::{Token, TokenLiteral, TokenType};
 
 fn is_digit(c: char) -> bool {
     match c {
@@ -125,7 +125,7 @@ impl Scanner {
         }
     }
 
-    fn current_substring(&self)  -> String {
+    fn current_substring(&self) -> String {
         self.source.clone()[(self.start)..(self.current)].to_string()
     }
 
@@ -147,7 +147,6 @@ impl Scanner {
         let num = f64::from_str(value).unwrap();
         self.add_token(TokenType::Number, TokenLiteral::Number(num))
     }
-
 
     fn string(&mut self) -> () {
         while self.peek() != '"' && !self.is_at_end() {
