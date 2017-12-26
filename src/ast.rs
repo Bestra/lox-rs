@@ -1,4 +1,4 @@
-use token::{Token, LoxValue};
+use token::{LoxValue, Token};
 #[derive(Debug)]
 pub enum Expr {
     Binary {
@@ -18,23 +18,23 @@ pub enum Expr {
     },
 }
 
-pub fn pretty_print(e: Expr) -> String {
-    match e {
+pub fn pretty_print(e: &Expr) -> String {
+    match *e {
         Expr::Binary {
-            operator: o,
-            left: l,
-            right: r,
-        } => parenthesize(&o.lexeme, vec![*l, *r]),
+            operator: ref o,
+            left: ref l,
+            right: ref r,
+        } => parenthesize(&o.lexeme, vec![&**l, &**r]),
         Expr::Unary {
-            operator: o,
-            right: r,
-        } => parenthesize(&o.lexeme, vec![*r]),
-        Expr::Grouping { expression: o } => parenthesize("group", vec![*o]),
-        Expr::Literal { value: v } => format!("{:?}", v),
+            operator: ref o,
+            right: ref r,
+        } => parenthesize(&o.lexeme, vec![&**r]),
+        Expr::Grouping { expression: ref o } => parenthesize("group", vec![&**o]),
+        Expr::Literal { value: ref v } => format!("{:?}", v),
     }
 }
 
-fn parenthesize(tag: &str, exprs: Vec<Expr>) -> String {
+fn parenthesize(tag: &str, exprs: Vec<&Expr>) -> String {
     let inner_str: Vec<String> = exprs.into_iter().map(|e| pretty_print(e)).collect();
     format!("({} {})", tag, inner_str.join(" "))
 }

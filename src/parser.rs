@@ -1,4 +1,4 @@
-use token::{Token, LoxValue, TokenType};
+use token::{LoxValue, Token, TokenType};
 use std::process;
 use ast::Expr;
 pub struct Parser {

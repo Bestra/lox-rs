@@ -4,7 +4,7 @@ mod token;
 pub mod ast;
 pub mod parser;
 pub mod interpreter;
-use token::{Token, LoxValue, TokenType};
+use token::{LoxValue, Token, TokenType};
 
 fn is_digit(c: char) -> bool {
     match c {
