@@ -11,5 +11,9 @@ fn main() {
     let mut parser = Parser::new(scanner.tokens);
     let output = parser.parse();
     println!("{}", lox::ast::pretty_print(&output));
-    println!("{}", lox::interpreter::interpret(output))
+
+    match lox::interpreter::interpret(output) {
+        Ok(o) => println!("{}", o),
+        Err(o) => eprintln!("{}", o),
+    }
 }

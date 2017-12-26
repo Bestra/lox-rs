@@ -1,23 +1,36 @@
 use ast::Expr;
-use token::{LoxValue, TokenType};
+use std::fmt;
+use token::{LoxValue, TokenType, Token};
 
-pub fn interpret(e: Expr) -> LoxValue {
+pub struct RuntimeError {
+    token: Token,
+    message: String,
+}
+
+impl fmt::Display for RuntimeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Runtime error at {:?}: {}", self.token, self.message)
+    }
+}
+
+
+pub fn interpret(e: Expr) -> Result<LoxValue, RuntimeError> {
     evaluate(e)
 }
 
-fn evaluate(e: Expr) -> LoxValue {
+fn evaluate(e: Expr) -> Result<LoxValue, RuntimeError> {
     match e {
-        Expr::Literal { value } => value,
+        Expr::Literal { value } => Ok(value),
         Expr::Grouping { expression } => evaluate(*expression),
         Expr::Unary { right, operator } => {
-            let r_val = evaluate(*right);
+            let r_val = evaluate(*right)?;
             match operator.token_type {
-                TokenType::Bang => LoxValue::Bool(!is_truthy(&r_val)),
+                TokenType::Bang => Ok(LoxValue::Bool(!is_truthy(&r_val))),
                 TokenType::Minus => match r_val {
-                    LoxValue::Number(n) => LoxValue::Number(-n),
-                    _ => LoxValue::Nil,
+                    LoxValue::Number(n) => Ok(LoxValue::Number(-n)),
+                    _ => Ok(LoxValue::Nil),
                 },
-                _ => LoxValue::Nil,
+                _ => Ok(LoxValue::Nil),
             }
         }
         Expr::Binary {
@@ -25,50 +38,70 @@ fn evaluate(e: Expr) -> LoxValue {
             right,
             operator,
         } => {
-            let l_val = evaluate(*left);
-            let r_val = evaluate(*right);
+            let l_val = evaluate(*left)?;
+            let r_val = evaluate(*right)?;
+            let _ok = check_number_operands(&operator, &l_val, &r_val)?;
 
-            match (operator.token_type, l_val, r_val) {
+            println!("number check: {:?}", _ok);
+            match (operator.token_type.clone(), l_val, r_val) {
                 // Numerical operations
                 (TokenType::Minus, LoxValue::Number(a), LoxValue::Number(b)) => {
-                    LoxValue::Number(a - b)
+                    Ok(LoxValue::Number(a - b))
                 }
                 (TokenType::Slash, LoxValue::Number(a), LoxValue::Number(b)) => {
-                    LoxValue::Number(a / b)
+                    Ok(LoxValue::Number(a / b))
                 }
                 (TokenType::Star, LoxValue::Number(a), LoxValue::Number(b)) => {
-                    LoxValue::Number(a * b)
+                    Ok(LoxValue::Number(a * b))
                 }
                 (TokenType::Plus, LoxValue::Number(a), LoxValue::Number(b)) => {
-                    LoxValue::Number(a + b)
+                    Ok(LoxValue::Number(a + b))
                 }
                 //Comparison
                 (TokenType::Greater, LoxValue::Number(a), LoxValue::Number(b)) => {
-                    LoxValue::Bool(a > b)
+                    Ok(LoxValue::Bool(a > b))
                 }
                 (TokenType::GreaterEqual, LoxValue::Number(a), LoxValue::Number(b)) => {
-                    LoxValue::Bool(a >= b)
+                    Ok(LoxValue::Bool(a >= b))
                 }
                 (TokenType::Less, LoxValue::Number(a), LoxValue::Number(b)) => {
-                    LoxValue::Bool(a < b)
+                    Ok(LoxValue::Bool(a < b))
                 }
                 (TokenType::LessEqual, LoxValue::Number(a), LoxValue::Number(b)) => {
-                    LoxValue::Bool(a <= b)
+                    Ok(LoxValue::Bool(a <= b))
                 }
 
-                (TokenType::EqualEqual, a, b) => LoxValue::Bool(is_equal(&a, &b)),
-                (TokenType::BangEqual, a, b) => LoxValue::Bool(!is_equal(&a, &b)),
+                (TokenType::EqualEqual, a, b) => Ok(LoxValue::Bool(is_equal(&a, &b))),
+                (TokenType::BangEqual, a, b) => Ok(LoxValue::Bool(!is_equal(&a, &b))),
 
                 // String Concat
                 (TokenType::Plus, LoxValue::String(a), LoxValue::String(b)) => {
-                    LoxValue::String(format!("{}{}", a, b))
+                    Ok(LoxValue::String(format!("{}{}", a, b)))
                 }
-                _ => LoxValue::Nil,
+                (_, a, b) => Err(RuntimeError {token: operator.clone(), message: format!("There was some problem applying {:?} to operands {:?} and {:?}", operator, a, b)}),
             }
         }
     }
 }
 
+fn check_number_operands(t: &Token, a: &LoxValue, b: &LoxValue) -> Result<bool, RuntimeError>{
+    match t.token_type {
+        TokenType::Plus |
+        TokenType::Minus |
+        TokenType::Slash |
+        TokenType::Star |
+        TokenType::Greater |
+        TokenType::GreaterEqual |
+        TokenType::Less |
+        TokenType::LessEqual => {
+            match (a, b) {
+                (&LoxValue::Number(_), &LoxValue::Number(_)) => Ok(true),
+                (_, _) => Err(RuntimeError {token: t.clone(), message: format!("Operands {:?} and {:?} must both be numbers.", a, b)})
+            }
+        }
+        _ => Ok(true)
+    }
+}
 fn is_equal(a: &LoxValue, b: &LoxValue) -> bool {
     a.eq(b)
     // (LoxValue::Nil, LoxValue::Nil) => LoxValue::Bool(true),
