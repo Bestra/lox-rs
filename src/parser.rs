@@ -24,7 +24,7 @@ impl Parser {
 
     fn equality(&mut self) -> Box<Expr> {
         let mut expr = self.comparison();
-        while self.match_token(vec![TokenType::Bang, TokenType::BangEqual]) {
+        while self.match_token(vec![TokenType::EqualEqual, TokenType::BangEqual]) {
             let operator = self.previous().clone();
             let right = self.comparison();
             expr = Box::new(Expr::Binary {
