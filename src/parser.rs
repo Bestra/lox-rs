@@ -131,7 +131,7 @@ impl Parser {
     }
 
     fn consume(&mut self, t: TokenType, message: &str) -> &Token {
-        if self.check(t) {
+        if self.check(&t) {
             self.advance()
         } else {
             eprintln!("{}", message);
@@ -141,7 +141,7 @@ impl Parser {
 
     fn match_token(&mut self, token_types: Vec<TokenType>) -> bool {
         for t in token_types {
-            if self.check(t) {
+            if self.check(&t) {
                 self.advance();
                 return true;
             }
@@ -150,11 +150,11 @@ impl Parser {
         false
     }
 
-    fn check(&mut self, t: TokenType) -> bool {
+    fn check(&mut self, t: &TokenType) -> bool {
         if self.is_at_end() {
             false
         } else {
-            self.peek().token_type == t
+            self.peek().token_type == *t
         }
     }
 
@@ -171,10 +171,10 @@ impl Parser {
     }
 
     fn peek(&self) -> &Token {
-        self.tokens.iter().nth(self.current).unwrap()
+        &self.tokens[self.current]
     }
 
     fn previous(&self) -> &Token {
-        self.tokens.iter().nth(self.current - 1).unwrap()
+        &self.tokens[self.current - 1]
     }
 }

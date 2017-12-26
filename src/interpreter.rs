@@ -12,7 +12,7 @@ fn evaluate(e: Expr) -> LoxValue {
         Expr::Unary { right, operator } => {
             let r_val = evaluate(*right);
             match operator.token_type {
-                TokenType::Bang => LoxValue::Bool(!is_truthy(r_val)),
+                TokenType::Bang => LoxValue::Bool(!is_truthy(&r_val)),
                 TokenType::Minus => match r_val {
                     LoxValue::Number(n) => LoxValue::Number(-n),
                     _ => LoxValue::Nil,
@@ -56,8 +56,8 @@ fn evaluate(e: Expr) -> LoxValue {
                     LoxValue::Bool(a <= b)
                 }
 
-                (TokenType::EqualEqual, a, b) => LoxValue::Bool(is_equal(a, b)),
-                (TokenType::BangEqual, a, b) => LoxValue::Bool(!is_equal(a, b)),
+                (TokenType::EqualEqual, a, b) => LoxValue::Bool(is_equal(&a, &b)),
+                (TokenType::BangEqual, a, b) => LoxValue::Bool(!is_equal(&a, &b)),
 
                 // String Concat
                 (TokenType::Plus, LoxValue::String(a), LoxValue::String(b)) => {
@@ -69,14 +69,14 @@ fn evaluate(e: Expr) -> LoxValue {
     }
 }
 
-fn is_equal(a: LoxValue, b: LoxValue) -> bool {
-    a.eq(&b)
+fn is_equal(a: &LoxValue, b: &LoxValue) -> bool {
+    a.eq(b)
     // (LoxValue::Nil, LoxValue::Nil) => LoxValue::Bool(true),
     // (LoxValue::Nil, _) => LoxValue::Bool(false),
     // (_, LoxValue::Nil) => LoxValue::Bool(false),
 }
-fn is_truthy(e: LoxValue) -> bool {
-    match e {
+fn is_truthy(e: &LoxValue) -> bool {
+    match *e {
         LoxValue::Nil => false,
         LoxValue::Bool(b) => b,
         _ => true,
