@@ -1,4 +1,4 @@
-use token::{Token, TokenLiteral};
+use token::{Token, LoxValue};
 #[derive(Debug)]
 pub enum Expr {
     Binary {
@@ -7,14 +7,14 @@ pub enum Expr {
         operator: Token,
     },
     Unary {
-        left: Box<Expr>,
+        right: Box<Expr>,
         operator: Token,
     },
     Grouping {
         expression: Box<Expr>,
     },
     Literal {
-        value: TokenLiteral,
+        value: LoxValue,
     },
 }
 
@@ -27,8 +27,8 @@ pub fn pretty_print(e: Expr) -> String {
         } => parenthesize(&o.lexeme, vec![*l, *r]),
         Expr::Unary {
             operator: o,
-            left: l,
-        } => parenthesize(&o.lexeme, vec![*l]),
+            right: r,
+        } => parenthesize(&o.lexeme, vec![*r]),
         Expr::Grouping { expression: o } => parenthesize("group", vec![*o]),
         Expr::Literal { value: v } => format!("{:?}", v),
     }

@@ -9,6 +9,8 @@ fn main() {
     scanner.scan_tokens();
 
     let mut parser = Parser::new(scanner.tokens);
-    println!("{}",lox::ast::pretty_print(parser.parse()));
+    let output = parser.parse();
+    println!("{}",lox::ast::pretty_print(output));
+    println!("{}", lox::interpreter::interpret(output))
 
 }

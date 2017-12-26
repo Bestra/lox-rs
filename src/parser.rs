@@ -1,4 +1,4 @@
-use token::{Token, TokenLiteral, TokenType};
+use token::{Token, LoxValue, TokenType};
 use std::process;
 use ast::Expr;
 pub struct Parser {
@@ -90,10 +90,10 @@ impl Parser {
     fn unary(&mut self) -> Box<Expr> {
         if self.match_token(vec![TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous().clone();
-            let left = self.unary();
+            let right = self.unary();
             Box::new(Expr::Unary {
                 operator: operator,
-                left: left,
+                right: right,
             })
         } else {
             self.primary()
@@ -103,17 +103,17 @@ impl Parser {
     fn primary(&mut self) -> Box<Expr> {
         if self.match_token(vec![TokenType::True]) {
             return Box::new(Expr::Literal {
-                value: TokenLiteral::Bool(true),
+                value: LoxValue::Bool(true),
             });
         }
         if self.match_token(vec![TokenType::False]) {
             return Box::new(Expr::Literal {
-                value: TokenLiteral::Bool(false),
+                value: LoxValue::Bool(false),
             });
         }
         if self.match_token(vec![TokenType::Nil]) {
             return Box::new(Expr::Literal {
-                value: TokenLiteral::Nil,
+                value: LoxValue::Nil,
             });
         }
         if self.match_token(vec![TokenType::Number, TokenType::String]) {

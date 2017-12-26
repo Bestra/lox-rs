@@ -3,7 +3,8 @@ use std::str::FromStr;
 mod token;
 pub mod ast;
 pub mod parser;
-use token::{Token, TokenLiteral, TokenType};
+pub mod interpreter;
+use token::{Token, LoxValue, TokenType};
 
 fn is_digit(c: char) -> bool {
     match c {
@@ -41,7 +42,7 @@ impl Scanner {
         let end = Token {
             token_type: TokenType::Eof,
             lexeme: "".to_string(),
-            literal: TokenLiteral::Nil,
+            literal: LoxValue::Nil,
             line: self.line,
         };
         self.tokens.push(end);
@@ -55,23 +56,23 @@ impl Scanner {
     fn scan_token(&mut self) -> () {
         let c = self.advance();
         match c {
-            '(' => self.add_token(TokenType::LeftParen, TokenLiteral::Nil),
-            ')' => self.add_token(TokenType::RightParen, TokenLiteral::Nil),
-            '{' => self.add_token(TokenType::LeftBrace, TokenLiteral::Nil),
-            '}' => self.add_token(TokenType::RightBrace, TokenLiteral::Nil),
-            ',' => self.add_token(TokenType::Comma, TokenLiteral::Nil),
-            '.' => self.add_token(TokenType::Dot, TokenLiteral::Nil),
-            '-' => self.add_token(TokenType::Minus, TokenLiteral::Nil),
-            '+' => self.add_token(TokenType::Plus, TokenLiteral::Nil),
-            ';' => self.add_token(TokenType::Semicolon, TokenLiteral::Nil),
-            '*' => self.add_token(TokenType::Star, TokenLiteral::Nil),
+            '(' => self.add_token(TokenType::LeftParen, LoxValue::Nil),
+            ')' => self.add_token(TokenType::RightParen, LoxValue::Nil),
+            '{' => self.add_token(TokenType::LeftBrace, LoxValue::Nil),
+            '}' => self.add_token(TokenType::RightBrace, LoxValue::Nil),
+            ',' => self.add_token(TokenType::Comma, LoxValue::Nil),
+            '.' => self.add_token(TokenType::Dot, LoxValue::Nil),
+            '-' => self.add_token(TokenType::Minus, LoxValue::Nil),
+            '+' => self.add_token(TokenType::Plus, LoxValue::Nil),
+            ';' => self.add_token(TokenType::Semicolon, LoxValue::Nil),
+            '*' => self.add_token(TokenType::Star, LoxValue::Nil),
             '!' => {
                 let t = if self.match_token('=') {
                     TokenType::BangEqual
                 } else {
                     TokenType::Bang
                 };
-                self.add_token(t, TokenLiteral::Nil)
+                self.add_token(t, LoxValue::Nil)
             }
             '=' => {
                 let t = if self.match_token('=') {
@@ -79,7 +80,7 @@ impl Scanner {
                 } else {
                     TokenType::Equal
                 };
-                self.add_token(t, TokenLiteral::Nil)
+                self.add_token(t, LoxValue::Nil)
             }
             '<' => {
                 let t = if self.match_token('=') {
@@ -87,7 +88,7 @@ impl Scanner {
                 } else {
                     TokenType::Less
                 };
-                self.add_token(t, TokenLiteral::Nil)
+                self.add_token(t, LoxValue::Nil)
             }
             '>' => {
                 let t = if self.match_token('=') {
@@ -95,7 +96,7 @@ impl Scanner {
                 } else {
                     TokenType::Greater
                 };
-                self.add_token(t, TokenLiteral::Nil)
+                self.add_token(t, LoxValue::Nil)
             }
 
             '/' => {
@@ -104,7 +105,7 @@ impl Scanner {
                         self.advance();
                     }
                 } else {
-                    self.add_token(TokenType::Slash, TokenLiteral::Nil)
+                    self.add_token(TokenType::Slash, LoxValue::Nil)
                 }
             }
             '"' => self.string(),
@@ -119,9 +120,9 @@ impl Scanner {
 
                 let text = &self.current_substring();
 
-                self.add_token(token::get_keyword(text), TokenLiteral::Nil)
+                self.add_token(token::get_keyword(text), LoxValue::Nil)
             }
-            _ => self.add_token(TokenType::Unexpected, TokenLiteral::Nil),
+            _ => self.add_token(TokenType::Unexpected, LoxValue::Nil),
         }
     }
 
@@ -145,7 +146,7 @@ impl Scanner {
 
         let value = &self.source.clone()[(self.start)..(self.current)];
         let num = f64::from_str(value).unwrap();
-        self.add_token(TokenType::Number, TokenLiteral::Number(num))
+        self.add_token(TokenType::Number, LoxValue::Number(num))
     }
 
     fn string(&mut self) -> () {
@@ -166,10 +167,10 @@ impl Scanner {
         let current = self.current - 1;
 
         let value = &self.source.clone()[start..current];
-        self.add_token(TokenType::String, TokenLiteral::String(value.to_string()));
+        self.add_token(TokenType::String, LoxValue::String(value.to_string()));
     }
 
-    fn add_token(&mut self, t: TokenType, l: TokenLiteral) -> () {
+    fn add_token(&mut self, t: TokenType, l: LoxValue) -> () {
         let start = self.start;
         let current = self.current;
         let lexeme = &self.source[start..current];

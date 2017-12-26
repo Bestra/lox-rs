@@ -1,3 +1,4 @@
+use std::fmt;
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     Eof,
@@ -64,18 +65,29 @@ pub fn get_keyword(s: &str) -> TokenType {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum TokenLiteral {
+#[derive(Debug, Clone, PartialEq)]
+pub enum LoxValue {
     String(String),
     Number(f64),
     Bool(bool),
     Nil,
 }
 
+impl fmt::Display for LoxValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            LoxValue::String(ref s) => write!(f, "{}", s),
+            LoxValue::Number(ref s) => write!(f, "{}", s),
+            LoxValue::Bool(ref s) => write!(f, "{}", s),
+            LoxValue::Nil => write!(f, "{}", "nil"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Token {
     pub lexeme: String,
     pub line: usize,
-    pub literal: TokenLiteral,
+    pub literal: LoxValue,
     pub token_type: TokenType,
 }
