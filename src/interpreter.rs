@@ -1,4 +1,4 @@
-use ast::Expr;
+use ast::{Expr, Program, Statement};
 use std::fmt;
 use token::{LoxValue, TokenType, Token};
 
@@ -13,9 +13,23 @@ impl fmt::Display for RuntimeError {
     }
 }
 
+pub fn interpret(e: Program) -> Result<bool, RuntimeError> {
+    for s in e.statements {
+        execute(s)?;
+    }
 
-pub fn interpret(e: Expr) -> Result<LoxValue, RuntimeError> {
-    evaluate(e)
+    Ok(true)
+}
+
+fn execute(s: Statement) -> Result<LoxValue, RuntimeError> {
+    match s {
+        Statement::Expression { expression } => {evaluate(*expression)},
+        Statement::Print { expression } => {
+            let val =  evaluate(*expression)?;
+            println!("{}", val);
+            Ok(val)
+        },
+    }
 }
 
 fn evaluate(e: Expr) -> Result<LoxValue, RuntimeError> {
@@ -104,9 +118,6 @@ fn check_number_operands(t: &Token, a: &LoxValue, b: &LoxValue) -> Result<bool, 
 }
 fn is_equal(a: &LoxValue, b: &LoxValue) -> bool {
     a.eq(b)
-    // (LoxValue::Nil, LoxValue::Nil) => LoxValue::Bool(true),
-    // (LoxValue::Nil, _) => LoxValue::Bool(false),
-    // (_, LoxValue::Nil) => LoxValue::Bool(false),
 }
 fn is_truthy(e: &LoxValue) -> bool {
     match *e {

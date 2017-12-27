@@ -1,6 +1,6 @@
 use token::{LoxValue, Token, TokenType};
 use std::process;
-use ast::Expr;
+use ast::{Expr, Statement, Program};
 pub struct Parser {
     pub tokens: Vec<Token>,
     current: usize,
@@ -14,8 +14,33 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Expr {
-        *self.expression()
+    pub fn parse(&mut self) -> Program {
+        let mut statements = Vec::new();
+        while !self.is_at_end() {
+            statements.push(self.statement());
+        }
+
+        Program {statements}
+    }
+
+    fn statement(&mut self) -> Statement {
+        if self.match_token(vec![TokenType::Print]) {
+            self.print_statement()
+        } else {
+            self.expression_statement()
+        }
+    }
+
+    fn print_statement(&mut self) -> Statement {
+        let expression = self.expression();
+        self.consume(TokenType::Semicolon, "Expect ';' after statement.");
+        Statement::Print {expression}
+    }
+
+    fn expression_statement(&mut self) -> Statement {
+        let expression = self.expression();
+        self.consume(TokenType::Semicolon, "Expect ';' after statement.");
+        Statement::Expression {expression}
     }
 
     fn expression(&mut self) -> Box<Expr> {
