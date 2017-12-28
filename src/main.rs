@@ -3,6 +3,7 @@ extern crate rprompt;
 
 use lox::parser::Parser;
 use lox::ast::AstPrint;
+use lox::interpreter::Interpreter;
 fn main() {
     let input = rprompt::prompt_reply_stdout(">").unwrap();
 
@@ -13,7 +14,8 @@ fn main() {
     let output = parser.parse();
     println!("{}", output.pretty_print());
 
-    match lox::interpreter::interpret(output) {
+    let mut interpreter = Interpreter::new();
+    match interpreter.interpret(output) {
         Ok(o) => println!("{}", o),
         Err(o) => eprintln!("{}", o),
     }

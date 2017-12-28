@@ -16,12 +16,16 @@ pub enum Expr {
     Literal {
         value: LoxValue,
     },
+    Variable {
+        name: Token,
+    }
 }
 
 #[derive(Debug)]
 pub enum Statement {
     Expression { expression: Box<Expr> },
     Print { expression: Box<Expr> },
+    Var { name: Token, initializer: Option<Box<Expr>> },
 }
 
 pub struct Program {
@@ -34,7 +38,7 @@ pub trait AstPrint {
 
 impl AstPrint for Program {
     fn pretty_print(&self) -> String {
-        let inner_str: Vec<String>  = self.statements.iter().map(|s| s.pretty_print()).collect();
+        let inner_str: Vec<String> = self.statements.iter().map(|s| s.pretty_print()).collect();
         format!("({} {})", "program", inner_str.join(" "))
     }
 }
@@ -42,12 +46,20 @@ impl AstPrint for Program {
 impl AstPrint for Statement {
     fn pretty_print(&self) -> String {
         match *self {
-            Statement::Expression {ref expression} => {
+            Statement::Expression { ref expression } => {
                 format!("({} {})", "expr", expression.pretty_print())
             }
 
-            Statement::Print {ref expression} => {
+            Statement::Print { ref expression } => {
                 format!("({} {})", "print", expression.pretty_print())
+            }
+
+            Statement::Var { ref name, ref initializer } => {
+                let var = match *initializer {
+                    Some(ref v) => format!("{}", v.pretty_print()),
+                    None => "nil".to_string()
+                };
+                format!("({} {} {})", "var", name.lexeme, var)
             }
         }
     }
@@ -60,19 +72,14 @@ impl AstPrint for Expr {
                 operator: ref o,
                 left: ref l,
                 right: ref r,
-            } => {
-                format!("({} {} {})", &o.lexeme, l.pretty_print(), r.pretty_print())
-            },
+            } => format!("({} {} {})", o.lexeme, l.pretty_print(), r.pretty_print()),
             Expr::Unary {
                 operator: ref o,
                 right: ref r,
-            } => {
-                format!("({} {})", &o.lexeme, r.pretty_print())
-            }
-            Expr::Grouping { expression: ref r } => {
-                format!("({} {})", "group", r.pretty_print())
-            }
+            } => format!("({} {})", o.lexeme, r.pretty_print()),
+            Expr::Grouping { expression: ref r } => format!("({} {})", "group", r.pretty_print()),
             Expr::Literal { value: ref v } => format!("{:?}", v),
+            Expr::Variable { name: ref n } => format!("{}", n.lexeme)
         }
     }
 }

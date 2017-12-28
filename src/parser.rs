@@ -1,6 +1,12 @@
 use token::{LoxValue, Token, TokenType};
 use std::process;
-use ast::{Expr, Statement, Program};
+use ast::{Expr, Program, Statement};
+
+pub struct ParseError {
+    token: Token,
+    message: String,
+}
+
 pub struct Parser {
     pub tokens: Vec<Token>,
     current: usize,
@@ -17,13 +23,34 @@ impl Parser {
     pub fn parse(&mut self) -> Program {
         let mut statements = Vec::new();
         while !self.is_at_end() {
-            statements.push(self.statement());
+            statements.push(self.declaration());
         }
 
-        Program {statements}
+        Program { statements }
     }
 
-    fn statement(&mut self) -> Statement {
+    fn declaration(&mut self) -> Statement {
+        if self.match_token(vec![TokenType::Var]) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        }
+    }
+
+    fn var_declaration(&mut self) -> Statement {
+        let name = self.consume(TokenType::Identifier, "Expect variable name.").clone();
+
+        let initializer = if self.match_token(vec![TokenType::Equal]) {
+            Some(self.expression())
+        } else {
+            None
+        };
+
+        self.consume(TokenType::Semicolon, "Expect ';' after varaible declaration.");
+        Statement::Var {name, initializer}
+    }
+
+    fn statement(&mut self) -> Statement  {
         if self.match_token(vec![TokenType::Print]) {
             self.print_statement()
         } else {
@@ -34,13 +61,13 @@ impl Parser {
     fn print_statement(&mut self) -> Statement {
         let expression = self.expression();
         self.consume(TokenType::Semicolon, "Expect ';' after statement.");
-        Statement::Print {expression}
+        Statement::Print { expression }
     }
 
     fn expression_statement(&mut self) -> Statement {
         let expression = self.expression();
         self.consume(TokenType::Semicolon, "Expect ';' after statement.");
-        Statement::Expression {expression}
+        Statement::Expression { expression }
     }
 
     fn expression(&mut self) -> Box<Expr> {
@@ -150,6 +177,11 @@ impl Parser {
             let expression = self.expression();
             self.consume(TokenType::RightParen, "Expect ')' after expression.");
             return Box::new(Expr::Grouping { expression });
+        }
+
+        if self.match_token(vec![TokenType::Identifier]) {
+            let name = self.previous().clone();
+            return Box::new(Expr::Variable { name })
         }
         eprintln!("No matching primary");
         process::exit(1);
