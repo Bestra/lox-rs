@@ -28,6 +28,17 @@ impl Environment {
             None => Err(RuntimeError { token: name, message: format!("Undefined variable {}.", lexeme)})
         }
     }
+
+    fn assign(&mut self, name: Token, value: LoxValue) -> Result<LoxValue, RuntimeError> {
+        let lexeme = name.lexeme.clone();
+        if self.values.contains_key(&name.lexeme) {
+            self.values.insert(name.lexeme, value.to_owned());
+            Ok(value)
+        } else {
+            Err(RuntimeError { token: name, message: format!("Undefined variable {}.", lexeme)})
+        }
+
+    }
 }
 
 pub struct Interpreter {
@@ -69,6 +80,10 @@ impl Interpreter {
 
     fn evaluate(&mut self, e: Expr) -> Result<LoxValue, RuntimeError> {
         match e {
+            Expr::Assign { name, value } => {
+                let val = self.evaluate(*value)?;
+                self.environment.assign(name, val)
+            }
             Expr::Literal { value } => Ok(value),
             Expr::Grouping { expression } => self.evaluate(*expression),
             Expr::Unary { right, operator } => {
