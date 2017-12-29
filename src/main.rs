@@ -13,12 +13,15 @@ fn main() {
         scanner.scan_tokens();
 
         let mut parser = Parser::new(scanner.tokens);
-        let output = parser.parse();
-        println!("{}", output.pretty_print());
-
-        match interpreter.interpret(output) {
-            Ok(o) => println!("{}", o),
-            Err(o) => eprintln!("{}", o),
+        match parser.parse() {
+            Ok(output) => {
+                println!("{}", output.pretty_print());
+                match interpreter.interpret(output) {
+                    Ok(o) => println!("{}", o),
+                    Err(e) => eprintln!("{}", e),
+                }
+            }
+            Err(e) => eprintln!("{:?}", e),
         }
     }
 }
