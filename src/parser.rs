@@ -29,7 +29,7 @@ impl Parser {
         Ok(Program { statements })
     }
 
-    fn declaration(&mut self) -> Result<Statement, ParseError>{
+    fn declaration(&mut self) -> Result<Statement, ParseError> {
         if self.match_token(vec![TokenType::Var]) {
             self.var_declaration()
         } else {
@@ -38,7 +38,8 @@ impl Parser {
     }
 
     fn var_declaration(&mut self) -> Result<Statement, ParseError> {
-        let name = self.consume(TokenType::Identifier, "Expect variable name.")?.clone();
+        let name = self.consume(TokenType::Identifier, "Expect variable name.")?
+            .clone();
 
         let initializer = if self.match_token(vec![TokenType::Equal]) {
             Some(self.expression()?)
@@ -46,11 +47,14 @@ impl Parser {
             None
         };
 
-        self.consume(TokenType::Semicolon, "Expect ';' after variable declaration.")?;
-        Ok(Statement::Var {name, initializer})
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.",
+        )?;
+        Ok(Statement::Var { name, initializer })
     }
 
-    fn statement(&mut self) -> Result<Statement, ParseError>  {
+    fn statement(&mut self) -> Result<Statement, ParseError> {
         if self.match_token(vec![TokenType::Print]) {
             self.print_statement()
         } else {
@@ -80,10 +84,11 @@ impl Parser {
             let equals = self.previous().clone();
             let value = self.assignment()?;
             match *expr {
-                Expr::Variable { name, ..} => Ok(Box::new(Expr::Assign {name, value: value})),
-                _ => {
-                    Err(ParseError { token: equals, message:  "Invalid assignment target".to_string() })
-                }
+                Expr::Variable { name, .. } => Ok(Box::new(Expr::Assign { name, value: value })),
+                _ => Err(ParseError {
+                    token: equals,
+                    message: "Invalid assignment target".to_string(),
+                }),
             }
         } else {
             Ok(expr)
@@ -197,17 +202,23 @@ impl Parser {
 
         if self.match_token(vec![TokenType::Identifier]) {
             let name = self.previous().clone();
-            return Ok(Box::new(Expr::Variable { name }))
+            return Ok(Box::new(Expr::Variable { name }));
         }
 
-        Err(ParseError { token: self.previous().to_owned(), message: "No matching primary".to_string()})
+        Err(ParseError {
+            token: self.previous().to_owned(),
+            message: "No matching primary".to_string(),
+        })
     }
 
     fn consume(&mut self, t: TokenType, message: &str) -> Result<&Token, ParseError> {
         if self.check(&t) {
             Ok(self.advance())
         } else {
-            Err(ParseError { token: self.previous().to_owned(), message: message.to_string()})
+            Err(ParseError {
+                token: self.previous().to_owned(),
+                message: message.to_string(),
+            })
         }
     }
 

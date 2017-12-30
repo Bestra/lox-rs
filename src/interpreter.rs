@@ -15,7 +15,10 @@ struct Environment {
 
 impl Environment {
     fn new(enclosing: Option<Box<Environment>>) -> Environment {
-        Environment { values: HashMap::new(), enclosing }
+        Environment {
+            values: HashMap::new(),
+            enclosing,
+        }
     }
 
     fn define(&mut self, name: String, value: LoxValue) -> () {
@@ -26,12 +29,13 @@ impl Environment {
         let lexeme = name.lexeme.clone();
         match self.values.get(&lexeme) {
             Some(v) => Ok(v.to_owned()),
-            None => {
-                match self.enclosing {
-                    Some(ref mut e) => e.get(name),
-                    None => Err(RuntimeError { token: name, message: format!("Undefined variable {}.", lexeme)})
-                }
-            }
+            None => match self.enclosing {
+                Some(ref mut e) => e.get(name),
+                None => Err(RuntimeError {
+                    token: name,
+                    message: format!("Undefined variable {}.", lexeme),
+                }),
+            },
         }
     }
 
@@ -43,7 +47,10 @@ impl Environment {
         } else {
             match self.enclosing {
                 Some(ref mut e) => e.assign(name, value),
-                None => Err(RuntimeError { token: name, message: format!("Undefined variable {}.", lexeme)})
+                None => Err(RuntimeError {
+                    token: name,
+                    message: format!("Undefined variable {}.", lexeme),
+                }),
             }
         }
     }
@@ -55,7 +62,9 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Interpreter {
-        Interpreter { environment: Environment::new(None) }
+        Interpreter {
+            environment: Environment::new(None),
+        }
     }
 
     pub fn interpret(&mut self, e: Program) -> Result<bool, RuntimeError> {
@@ -77,7 +86,7 @@ impl Interpreter {
             Statement::Var { name, initializer } => {
                 let val = match initializer {
                     Some(v) => self.evaluate(*v)?,
-                    None => LoxValue::Nil
+                    None => LoxValue::Nil,
                 };
 
                 self.environment.define(name.lexeme, val.clone());

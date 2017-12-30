@@ -19,17 +19,24 @@ pub enum Expr {
     Variable {
         name: Token,
     },
-    Assign{
+    Assign {
         name: Token,
         value: Box<Expr>,
-    }
+    },
 }
 
 #[derive(Debug)]
 pub enum Statement {
-    Expression { expression: Box<Expr> },
-    Print { expression: Box<Expr> },
-    Var { name: Token, initializer: Option<Box<Expr>> },
+    Expression {
+        expression: Box<Expr>,
+    },
+    Print {
+        expression: Box<Expr>,
+    },
+    Var {
+        name: Token,
+        initializer: Option<Box<Expr>>,
+    },
 }
 
 pub struct Program {
@@ -58,10 +65,13 @@ impl AstPrint for Statement {
                 format!("({} {})", "print", expression.pretty_print())
             }
 
-            Statement::Var { ref name, ref initializer } => {
+            Statement::Var {
+                ref name,
+                ref initializer,
+            } => {
                 let var = match *initializer {
                     Some(ref v) => format!("{}", v.pretty_print()),
-                    None => "nil".to_string()
+                    None => "nil".to_string(),
                 };
                 format!("({} {} {})", "def_var", name.lexeme, var)
             }
@@ -84,9 +94,10 @@ impl AstPrint for Expr {
             Expr::Grouping { expression: ref r } => format!("({} {})", "group", r.pretty_print()),
             Expr::Literal { value: ref v } => format!("{:?}", v),
             Expr::Variable { name: ref n } => format!("{}", n.lexeme),
-            Expr::Assign { ref name, ref value } => {
-                format!("({} {} {})", "set_var", name.lexeme, value.pretty_print())
-            }
+            Expr::Assign {
+                ref name,
+                ref value,
+            } => format!("({} {} {})", "set_var", name.lexeme, value.pretty_print()),
         }
     }
 }
