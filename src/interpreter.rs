@@ -10,11 +10,12 @@ pub struct RuntimeError {
 
 struct Environment {
     values: HashMap<String, LoxValue>,
+    enclosing: Option<Box<Environment>>,
 }
 
 impl Environment {
-    fn new() -> Environment {
-        Environment { values: HashMap::new() }
+    fn new(enclosing: Option<Box<Environment>>) -> Environment {
+        Environment { values: HashMap::new(), enclosing }
     }
 
     fn define(&mut self, name: String, value: LoxValue) -> () {
@@ -25,7 +26,12 @@ impl Environment {
         let lexeme = name.lexeme.clone();
         match self.values.get(&lexeme) {
             Some(v) => Ok(v.to_owned()),
-            None => Err(RuntimeError { token: name, message: format!("Undefined variable {}.", lexeme)})
+            None => {
+                match self.enclosing {
+                    Some(ref mut e) => e.get(name),
+                    None => Err(RuntimeError { token: name, message: format!("Undefined variable {}.", lexeme)})
+                }
+            }
         }
     }
 
@@ -35,9 +41,11 @@ impl Environment {
             self.values.insert(name.lexeme, value.to_owned());
             Ok(value)
         } else {
-            Err(RuntimeError { token: name, message: format!("Undefined variable {}.", lexeme)})
+            match self.enclosing {
+                Some(ref mut e) => e.assign(name, value),
+                None => Err(RuntimeError { token: name, message: format!("Undefined variable {}.", lexeme)})
+            }
         }
-
     }
 }
 
@@ -47,7 +55,7 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Interpreter {
-        Interpreter { environment: Environment::new() }
+        Interpreter { environment: Environment::new(None) }
     }
 
     pub fn interpret(&mut self, e: Program) -> Result<bool, RuntimeError> {
