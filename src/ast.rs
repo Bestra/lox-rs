@@ -37,6 +37,9 @@ pub enum Statement {
         name: Token,
         initializer: Option<Box<Expr>>,
     },
+    Block {
+        statements: Vec<Statement>,
+    }
 }
 
 pub struct Program {
@@ -63,6 +66,11 @@ impl AstPrint for Statement {
 
             Statement::Print { ref expression } => {
                 format!("({} {})", "print", expression.pretty_print())
+            }
+
+            Statement::Block { ref statements } => {
+                    let inner_str: Vec<String> = statements.iter().map(|s| s.pretty_print()).collect();
+                format!("({} {})", "block", inner_str.join(" "))
             }
 
             Statement::Var {

@@ -1,5 +1,6 @@
 use ast::{Expr, Program, Statement};
 use std::fmt;
+use std::mem::{replace};
 use token::{LoxValue, Token, TokenType};
 use std::collections::HashMap;
 
@@ -8,6 +9,7 @@ pub struct RuntimeError {
     message: String,
 }
 
+#[derive(Clone)]
 struct Environment {
     values: HashMap<String, LoxValue>,
     enclosing: Option<Box<Environment>>,
@@ -75,13 +77,16 @@ impl Interpreter {
         Ok(true)
     }
 
-    fn execute(&mut self, s: Statement) -> Result<LoxValue, RuntimeError> {
+    fn execute(&mut self, s: Statement) -> Result<bool, RuntimeError> {
         match s {
-            Statement::Expression { expression } => self.evaluate(*expression),
+            Statement::Expression { expression } => {
+                self.evaluate(*expression)?;
+                Ok(true)
+            }
             Statement::Print { expression } => {
                 let val = self.evaluate(*expression)?;
                 println!("{}", val);
-                Ok(val)
+                Ok(true)
             }
             Statement::Var { name, initializer } => {
                 let val = match initializer {
@@ -90,9 +95,29 @@ impl Interpreter {
                 };
 
                 self.environment.define(name.lexeme, val.clone());
-                Ok(val)
+                Ok(true)
+            }
+            Statement::Block { statements } => {
+                let parent = self.environment.clone();
+                self.execute_block(statements, Environment::new(Some(Box::new(parent))))
             }
         }
+    }
+
+    fn execute_block(&mut self, statements: Vec<Statement>, env: Environment) -> Result<bool, RuntimeError> {
+        let previous_env = replace(&mut self.environment, env);
+        for s in statements {
+            match self.execute(s) {
+                Ok(r) => (),
+                Err(r) => {
+                    replace(&mut self.environment, previous_env);
+                    return Err(r);
+                }
+            }
+        }
+
+        replace(&mut self.environment, previous_env);
+        Ok(true)
     }
 
     fn evaluate(&mut self, e: Expr) -> Result<LoxValue, RuntimeError> {
