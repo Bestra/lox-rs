@@ -87,9 +87,9 @@ impl Parser {
     }
 
     fn if_statement(&mut self) -> ParseResult<Statement> {
-        self.consume(TokenType::LeftParen, "Expect '(' before 'if'.");
+        self.consume(TokenType::LeftParen, "Expect '(' before 'if'.")?;
         let condition = self.expression()?;
-        self.consume(TokenType::RightParen, "Expect ')' after 'if'.");
+        self.consume(TokenType::RightParen, "Expect ')' after 'if'.")?;
 
         let then_branch = Box::new(self.statement()?);
         let mut else_branch = None;
@@ -100,17 +100,17 @@ impl Parser {
         Ok(Statement::If { condition, then_branch, else_branch })
     }
 
-    fn expression_statement(&mut self) -> Result<Statement, ParseError> {
+    fn expression_statement(&mut self) -> ParseResult<Statement> {
         let expression = self.expression()?;
         self.consume(TokenType::Semicolon, "Expect ';' after statement.")?;
         Ok(Statement::Expression { expression })
     }
 
-    fn expression(&mut self) -> Result<Box<Expr>, ParseError> {
+    fn expression(&mut self) -> ParseResult<Box<Expr>> {
         self.assignment()
     }
 
-    fn assignment(&mut self) -> Result<Box<Expr>, ParseError> {
+    fn assignment(&mut self) -> ParseResult<Box<Expr>> {
         let expr = self.equality()?;
         if self.match_token(vec![TokenType::Equal]) {
             let equals = self.previous().clone();
@@ -127,7 +127,7 @@ impl Parser {
         }
     }
 
-    fn equality(&mut self) -> Result<Box<Expr>, ParseError> {
+    fn equality(&mut self) -> ParseResult<Box<Expr>> {
         let mut expr = self.comparison()?;
         while self.match_token(vec![TokenType::EqualEqual, TokenType::BangEqual]) {
             let operator = self.previous().clone();
@@ -142,7 +142,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn comparison(&mut self) -> Result<Box<Expr>, ParseError> {
+    fn comparison(&mut self) -> ParseResult<Box<Expr>> {
         let mut expr = self.addition()?;
         while self.match_token(vec![
             TokenType::Greater,
@@ -162,7 +162,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn addition(&mut self) -> Result<Box<Expr>, ParseError> {
+    fn addition(&mut self) -> ParseResult<Box<Expr>> {
         let mut expr = self.multiplication()?;
         while self.match_token(vec![TokenType::Minus, TokenType::Plus]) {
             let operator = self.previous().clone();
@@ -177,7 +177,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn multiplication(&mut self) -> Result<Box<Expr>, ParseError> {
+    fn multiplication(&mut self) -> ParseResult<Box<Expr>> {
         let mut expr = self.unary()?;
         while self.match_token(vec![TokenType::Slash, TokenType::Star]) {
             let operator = self.previous().clone();
@@ -192,7 +192,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn unary(&mut self) -> Result<Box<Expr>, ParseError> {
+    fn unary(&mut self) -> ParseResult<Box<Expr>> {
         if self.match_token(vec![TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous().clone();
             let right = self.unary()?;
@@ -205,7 +205,7 @@ impl Parser {
         }
     }
 
-    fn primary(&mut self) -> Result<Box<Expr>, ParseError> {
+    fn primary(&mut self) -> ParseResult<Box<Expr>> {
         if self.match_token(vec![TokenType::True]) {
             return Ok(Box::new(Expr::Literal {
                 value: LoxValue::Bool(true),
@@ -243,7 +243,7 @@ impl Parser {
         })
     }
 
-    fn consume(&mut self, t: TokenType, message: &str) -> Result<&Token, ParseError> {
+    fn consume(&mut self, t: TokenType, message: &str) -> ParseResult<&Token> {
         if self.check(&t) {
             Ok(self.advance())
         } else {
@@ -279,10 +279,6 @@ impl Parser {
         }
 
         self.previous()
-    }
-
-    fn rewind(&mut self) {
-        self.current -= 1;
     }
 
     fn is_at_end(&self) -> bool {

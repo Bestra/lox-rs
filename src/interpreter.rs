@@ -29,7 +29,7 @@ impl Environment {
         self.values.insert(name, value);
     }
 
-    fn get(&mut self, name: Token) -> Result<LoxValue, RuntimeError> {
+    fn get(&mut self, name: Token) -> IResult<LoxValue> {
         let lexeme = name.lexeme.clone();
         match self.values.get(&lexeme) {
             Some(v) => Ok(v.to_owned()),
@@ -43,7 +43,7 @@ impl Environment {
         }
     }
 
-    fn assign(&mut self, name: Token, value: LoxValue) -> Result<LoxValue, RuntimeError> {
+    fn assign(&mut self, name: Token, value: LoxValue) -> IResult<LoxValue> {
         let lexeme = name.lexeme.clone();
         if self.values.contains_key(&name.lexeme) {
             self.values.insert(name.lexeme, value.to_owned());
@@ -71,7 +71,7 @@ impl Interpreter {
         }
     }
 
-    pub fn interpret(&mut self, e: Program) -> Result<bool, RuntimeError> {
+    pub fn interpret(&mut self, e: Program) -> IResult<bool> {
         for s in e.statements {
             self.execute(s)?;
         }
@@ -79,7 +79,7 @@ impl Interpreter {
         Ok(true)
     }
 
-    fn execute(&mut self, s: Statement) -> Result<bool, RuntimeError> {
+    fn execute(&mut self, s: Statement) -> IResult<bool> {
         match s {
             Statement::Block { statements } => {
                 let parent = self.environment.clone();
@@ -91,9 +91,9 @@ impl Interpreter {
             }
             Statement::If { condition, then_branch, else_branch } => {
                 if is_truthy(&self.evaluate(*condition)?) {
-                    self.execute(*then_branch);
+                    self.execute(*then_branch)?;
                 } else if let Some(b) = else_branch {
-                    self.execute(*b);
+                    self.execute(*b)?;
                 }
                 Ok(true)
             }
@@ -118,7 +118,7 @@ impl Interpreter {
         &mut self,
         statements: Vec<Statement>,
         env: Environment,
-    ) -> Result<bool, RuntimeError> {
+    ) -> IResult<bool> {
         let previous_env = replace(&mut self.environment, env);
         for s in statements {
             match self.execute(s) {
@@ -134,7 +134,7 @@ impl Interpreter {
         Ok(true)
     }
 
-    fn evaluate(&mut self, e: Expr) -> Result<LoxValue, RuntimeError> {
+    fn evaluate(&mut self, e: Expr) -> IResult<LoxValue> {
         match e {
             Expr::Assign { name, value } => {
                 let val = self.evaluate(*value)?;
@@ -219,7 +219,7 @@ impl fmt::Display for RuntimeError {
     }
 }
 
-fn check_number_operands(t: &Token, a: &LoxValue, b: &LoxValue) -> Result<bool, RuntimeError> {
+fn check_number_operands(t: &Token, a: &LoxValue, b: &LoxValue) -> IResult<bool> {
     match t.token_type {
         TokenType::Minus
         | TokenType::Slash
