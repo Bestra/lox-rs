@@ -208,6 +208,23 @@ impl Interpreter {
                 }
             }
 
+            Expr::Logical {
+                left,
+                right,
+                operator,
+            } => {
+                let l = self.evaluate(*left)?;
+                if operator.token_type == TokenType::Or && is_truthy(&l) {
+                    return Ok(l);
+                }
+
+                if !is_truthy(&l) {
+                    return Ok(l);
+                }
+
+                self.evaluate(*right)
+            }
+
             Expr::Variable { name } => self.environment.get(name),
         }
     }

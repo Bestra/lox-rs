@@ -1,12 +1,12 @@
 use token::{LoxValue, Token};
 #[derive(Debug)]
 pub enum Expr {
+    Assign {
+        name: Token,
+        value: Box<Expr>,
+    },
     Binary {
         left: Box<Expr>,
-        right: Box<Expr>,
-        operator: Token,
-    },
-    Unary {
         right: Box<Expr>,
         operator: Token,
     },
@@ -16,12 +16,17 @@ pub enum Expr {
     Literal {
         value: LoxValue,
     },
+    Logical {
+        left: Box<Expr>,
+        right: Box<Expr>,
+        operator: Token,
+    },
+    Unary {
+        right: Box<Expr>,
+        operator: Token,
+    },
     Variable {
         name: Token,
-    },
-    Assign {
-        name: Token,
-        value: Box<Expr>,
     },
 }
 
@@ -115,6 +120,11 @@ impl AstPrint for Expr {
     fn pretty_print(&self) -> String {
         match *self {
             Expr::Binary {
+                operator: ref o,
+                left: ref l,
+                right: ref r,
+            }
+            | Expr::Logical {
                 operator: ref o,
                 left: ref l,
                 right: ref r,

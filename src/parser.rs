@@ -115,7 +115,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> ParseResult<Box<Expr>> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
         if self.match_token(&[TokenType::Equal]) {
             let equals = self.previous().clone();
             let value = self.assignment()?;
@@ -131,6 +131,7 @@ impl Parser {
         }
     }
 
+    /// This fn implements equality, comparison, addition, and multiplication
     fn binary_expr(
         &mut self,
         left: fn(&mut Self) -> ParseResult<Box<Expr>>,
@@ -143,8 +144,38 @@ impl Parser {
             let right = right(self)?;
             expr = Box::new(Expr::Binary {
                 left: expr,
-                operator: operator,
-                right: right,
+                operator,
+                right,
+            })
+        }
+
+        Ok(expr)
+    }
+
+    fn or(&mut self) -> ParseResult<Box<Expr>> {
+        let mut expr = self.and()?;
+        while self.match_token(&[TokenType::Or]) {
+            let operator = self.previous().clone();
+            let right = self.and()?;
+            expr = Box::new(Expr::Logical {
+                left: expr,
+                operator,
+                right,
+            })
+        }
+
+        Ok(expr)
+    }
+
+    fn and(&mut self) -> ParseResult<Box<Expr>> {
+        let mut expr = self.equality()?;
+        while self.match_token(&[TokenType::And]) {
+            let operator = self.previous().clone();
+            let right = self.equality()?;
+            expr = Box::new(Expr::Logical {
+                left: expr,
+                operator,
+                right,
             })
         }
 
