@@ -89,7 +89,11 @@ impl Interpreter {
                 self.evaluate(*expression)?;
                 Ok(true)
             }
-            Statement::If { condition, then_branch, else_branch } => {
+            Statement::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 if is_truthy(&self.evaluate(*condition)?) {
                     self.execute(*then_branch)?;
                 } else if let Some(b) = else_branch {
@@ -114,11 +118,7 @@ impl Interpreter {
         }
     }
 
-    fn execute_block(
-        &mut self,
-        statements: Vec<Statement>,
-        env: Environment,
-    ) -> IResult<bool> {
+    fn execute_block(&mut self, statements: Vec<Statement>, env: Environment) -> IResult<bool> {
         let previous_env = replace(&mut self.environment, env);
         for s in statements {
             match self.execute(s) {

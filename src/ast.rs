@@ -78,18 +78,23 @@ impl AstPrint for Statement {
                 format!("({} {})", "block", inner_str.join(" "))
             }
 
-            Statement::If { ref condition, ref then_branch, ref else_branch } => {
+            Statement::If {
+                ref condition,
+                ref then_branch,
+                ref else_branch,
+            } => {
                 let else_str = match *else_branch {
                     Some(ref e) => e.pretty_print(),
                     None => "".to_string(),
                 };
 
-                format!("({} {} {} {})",
-                        "if",
-                        condition.pretty_print(),
-                        then_branch.pretty_print(),
-                        else_str
-                        )
+                format!(
+                    "({} {} {} {})",
+                    "if",
+                    condition.pretty_print(),
+                    then_branch.pretty_print(),
+                    else_str
+                )
             }
 
             Statement::Var {

@@ -97,7 +97,11 @@ impl Parser {
             else_branch = Some(Box::new(self.statement()?))
         }
 
-        Ok(Statement::If { condition, then_branch, else_branch })
+        Ok(Statement::If {
+            condition,
+            then_branch,
+            else_branch,
+        })
     }
 
     fn expression_statement(&mut self) -> ParseResult<Statement> {
@@ -206,41 +210,35 @@ impl Parser {
     }
 
     fn primary(&mut self) -> ParseResult<Box<Expr>> {
-        if self.match_token(vec![TokenType::True]) {
-            return Ok(Box::new(Expr::Literal {
+        match self.advance().token_type {
+            TokenType::True => Ok(Box::new(Expr::Literal {
                 value: LoxValue::Bool(true),
-            }));
-        }
-        if self.match_token(vec![TokenType::False]) {
-            return Ok(Box::new(Expr::Literal {
+            })),
+            TokenType::False => Ok(Box::new(Expr::Literal {
                 value: LoxValue::Bool(false),
-            }));
-        }
-        if self.match_token(vec![TokenType::Nil]) {
-            return Ok(Box::new(Expr::Literal {
+            })),
+            TokenType::Nil => Ok(Box::new(Expr::Literal {
                 value: LoxValue::Nil,
-            }));
-        }
-        if self.match_token(vec![TokenType::Number, TokenType::String]) {
-            return Ok(Box::new(Expr::Literal {
+            })),
+            TokenType::Number | TokenType::String => Ok(Box::new(Expr::Literal {
                 value: self.previous().clone().literal,
-            }));
-        }
-        if self.match_token(vec![TokenType::LeftParen]) {
-            let expression = self.expression()?;
-            self.consume(TokenType::RightParen, "Expect ')' after expression.")?;
-            return Ok(Box::new(Expr::Grouping { expression }));
-        }
+            })),
+            TokenType::LeftParen => {
+                let expression = self.expression()?;
+                self.consume(TokenType::RightParen, "Expect ')' after expression.")?;
+                Ok(Box::new(Expr::Grouping { expression }))
+            }
 
-        if self.match_token(vec![TokenType::Identifier]) {
-            let name = self.previous().clone();
-            return Ok(Box::new(Expr::Variable { name }));
-        }
+            TokenType::Identifier => {
+                let name = self.previous().clone();
+                Ok(Box::new(Expr::Variable { name }))
+            }
 
-        Err(ParseError {
-            token: self.previous().to_owned(),
-            message: "No matching primary".to_string(),
-        })
+            _ => Err(ParseError {
+                token: self.previous().to_owned(),
+                message: "No matching primary".to_string(),
+            }),
+        }
     }
 
     fn consume(&mut self, t: TokenType, message: &str) -> ParseResult<&Token> {
