@@ -1,6 +1,6 @@
 use ast::{Expr, Program, Statement};
 use std::fmt;
-use std::mem::{replace};
+use std::mem::replace;
 use token::{LoxValue, Token, TokenType};
 use std::collections::HashMap;
 
@@ -104,7 +104,11 @@ impl Interpreter {
         }
     }
 
-    fn execute_block(&mut self, statements: Vec<Statement>, env: Environment) -> Result<bool, RuntimeError> {
+    fn execute_block(
+        &mut self,
+        statements: Vec<Statement>,
+        env: Environment,
+    ) -> Result<bool, RuntimeError> {
         let previous_env = replace(&mut self.environment, env);
         for s in statements {
             match self.execute(s) {

@@ -58,7 +58,9 @@ impl Parser {
         if self.match_token(vec![TokenType::Print]) {
             self.print_statement()
         } else if self.match_token(vec![TokenType::LeftBrace]) {
-            Ok(Statement::Block { statements: self.block()?})
+            Ok(Statement::Block {
+                statements: self.block()?,
+            })
         } else {
             self.expression_statement()
         }
@@ -66,7 +68,7 @@ impl Parser {
 
     fn block(&mut self) -> Result<Vec<Statement>, ParseError> {
         let mut statements = Vec::new();
-        while !self.check(&TokenType::RightBrace) && ! self.is_at_end() {
+        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
             statements.push(self.declaration()?);
         }
 

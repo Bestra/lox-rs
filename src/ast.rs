@@ -39,7 +39,7 @@ pub enum Statement {
     },
     Block {
         statements: Vec<Statement>,
-    }
+    },
 }
 
 pub struct Program {
@@ -69,7 +69,7 @@ impl AstPrint for Statement {
             }
 
             Statement::Block { ref statements } => {
-                    let inner_str: Vec<String> = statements.iter().map(|s| s.pretty_print()).collect();
+                let inner_str: Vec<String> = statements.iter().map(|s| s.pretty_print()).collect();
                 format!("({} {})", "block", inner_str.join(" "))
             }
 
