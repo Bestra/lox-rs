@@ -12,6 +12,8 @@ pub struct Parser {
     current: usize,
 }
 
+type ParseResult<T> = Result<T, ParseError>;
+
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Parser {
         Parser {
@@ -61,6 +63,8 @@ impl Parser {
             Ok(Statement::Block {
                 statements: self.block()?,
             })
+        } else if self.match_token(vec![TokenType::If]) {
+            self.if_statement()
         } else {
             self.expression_statement()
         }
@@ -80,6 +84,20 @@ impl Parser {
         let expression = self.expression()?;
         self.consume(TokenType::Semicolon, "Expect ';' after statement.")?;
         Ok(Statement::Print { expression })
+    }
+
+    fn if_statement(&mut self) -> ParseResult<Statement> {
+        self.consume(TokenType::LeftParen, "Expect '(' before 'if'.");
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expect ')' after 'if'.");
+
+        let then_branch = Box::new(self.statement()?);
+        let mut else_branch = None;
+        if self.match_token(vec![TokenType::Else]) {
+            else_branch = Some(Box::new(self.statement()?))
+        }
+
+        Ok(Statement::If { condition, then_branch, else_branch })
     }
 
     fn expression_statement(&mut self) -> Result<Statement, ParseError> {
@@ -261,6 +279,10 @@ impl Parser {
         }
 
         self.previous()
+    }
+
+    fn rewind(&mut self) {
+        self.current -= 1;
     }
 
     fn is_at_end(&self) -> bool {

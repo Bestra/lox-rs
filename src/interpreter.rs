@@ -9,6 +9,8 @@ pub struct RuntimeError {
     message: String,
 }
 
+type IResult<T> = Result<T, RuntimeError>;
+
 #[derive(Clone)]
 struct Environment {
     values: HashMap<String, LoxValue>,
@@ -79,8 +81,20 @@ impl Interpreter {
 
     fn execute(&mut self, s: Statement) -> Result<bool, RuntimeError> {
         match s {
+            Statement::Block { statements } => {
+                let parent = self.environment.clone();
+                self.execute_block(statements, Environment::new(Some(Box::new(parent))))
+            }
             Statement::Expression { expression } => {
                 self.evaluate(*expression)?;
+                Ok(true)
+            }
+            Statement::If { condition, then_branch, else_branch } => {
+                if is_truthy(&self.evaluate(*condition)?) {
+                    self.execute(*then_branch);
+                } else if let Some(b) = else_branch {
+                    self.execute(*b);
+                }
                 Ok(true)
             }
             Statement::Print { expression } => {
@@ -97,10 +111,6 @@ impl Interpreter {
                 self.environment.define(name.lexeme, val.clone());
                 Ok(true)
             }
-            Statement::Block { statements } => {
-                let parent = self.environment.clone();
-                self.execute_block(statements, Environment::new(Some(Box::new(parent))))
-            }
         }
     }
 
@@ -112,7 +122,7 @@ impl Interpreter {
         let previous_env = replace(&mut self.environment, env);
         for s in statements {
             match self.execute(s) {
-                Ok(r) => (),
+                Ok(_r) => (),
                 Err(r) => {
                     replace(&mut self.environment, previous_env);
                     return Err(r);

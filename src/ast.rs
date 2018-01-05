@@ -40,6 +40,11 @@ pub enum Statement {
     Block {
         statements: Vec<Statement>,
     },
+    If {
+        condition: Box<Expr>,
+        then_branch: Box<Statement>,
+        else_branch: Option<Box<Statement>>,
+    },
 }
 
 pub struct Program {
@@ -71,6 +76,20 @@ impl AstPrint for Statement {
             Statement::Block { ref statements } => {
                 let inner_str: Vec<String> = statements.iter().map(|s| s.pretty_print()).collect();
                 format!("({} {})", "block", inner_str.join(" "))
+            }
+
+            Statement::If { ref condition, ref then_branch, ref else_branch } => {
+                let else_str = match *else_branch {
+                    Some(ref e) => e.pretty_print(),
+                    None => "".to_string(),
+                };
+
+                format!("({} {} {} {})",
+                        "if",
+                        condition.pretty_print(),
+                        then_branch.pretty_print(),
+                        else_str
+                        )
             }
 
             Statement::Var {
