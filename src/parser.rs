@@ -32,7 +32,7 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Result<Statement, ParseError> {
-        if self.match_token(vec![TokenType::Var]) {
+        if self.match_token(&vec![TokenType::Var]) {
             self.var_declaration()
         } else {
             self.statement()
@@ -43,7 +43,7 @@ impl Parser {
         let name = self.consume(TokenType::Identifier, "Expect variable name.")?
             .clone();
 
-        let initializer = if self.match_token(vec![TokenType::Equal]) {
+        let initializer = if self.match_token(&vec![TokenType::Equal]) {
             Some(self.expression()?)
         } else {
             None
@@ -57,13 +57,13 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Statement, ParseError> {
-        if self.match_token(vec![TokenType::Print]) {
+        if self.match_token(&vec![TokenType::Print]) {
             self.print_statement()
-        } else if self.match_token(vec![TokenType::LeftBrace]) {
+        } else if self.match_token(&vec![TokenType::LeftBrace]) {
             Ok(Statement::Block {
                 statements: self.block()?,
             })
-        } else if self.match_token(vec![TokenType::If]) {
+        } else if self.match_token(&vec![TokenType::If]) {
             self.if_statement()
         } else {
             self.expression_statement()
@@ -93,7 +93,7 @@ impl Parser {
 
         let then_branch = Box::new(self.statement()?);
         let mut else_branch = None;
-        if self.match_token(vec![TokenType::Else]) {
+        if self.match_token(&vec![TokenType::Else]) {
             else_branch = Some(Box::new(self.statement()?))
         }
 
@@ -116,7 +116,7 @@ impl Parser {
 
     fn assignment(&mut self) -> ParseResult<Box<Expr>> {
         let expr = self.equality()?;
-        if self.match_token(vec![TokenType::Equal]) {
+        if self.match_token(&vec![TokenType::Equal]) {
             let equals = self.previous().clone();
             let value = self.assignment()?;
             match *expr {
@@ -131,11 +131,16 @@ impl Parser {
         }
     }
 
-    fn equality(&mut self) -> ParseResult<Box<Expr>> {
-        let mut expr = self.comparison()?;
-        while self.match_token(vec![TokenType::EqualEqual, TokenType::BangEqual]) {
+
+    fn binary_expr(&mut self,
+                   left: fn(&mut Self) -> ParseResult<Box<Expr>>,
+                   matches: &Vec<TokenType>,
+                   right: fn(&mut Self) -> ParseResult<Box<Expr>>) -> ParseResult<Box<Expr>> {
+
+        let mut expr = left(self)?;
+        while self.match_token(matches) {
             let operator = self.previous().clone();
-            let right = self.comparison()?;
+            let right = right(self)?;
             expr = Box::new(Expr::Binary {
                 left: expr,
                 operator: operator,
@@ -144,60 +149,43 @@ impl Parser {
         }
 
         Ok(expr)
+    }
+
+    fn equality(&mut self) -> ParseResult<Box<Expr>> {
+        self.binary_expr(Parser::comparison,
+                         &vec![TokenType::EqualEqual, TokenType::BangEqual],
+                         Parser::comparison
+        )
     }
 
     fn comparison(&mut self) -> ParseResult<Box<Expr>> {
-        let mut expr = self.addition()?;
-        while self.match_token(vec![
-            TokenType::Greater,
-            TokenType::GreaterEqual,
-            TokenType::Less,
-            TokenType::LessEqual,
-        ]) {
-            let operator = self.previous().clone();
-            let right = self.addition()?;
-            expr = Box::new(Expr::Binary {
-                left: expr,
-                operator: operator,
-                right: right,
-            })
-        }
-
-        Ok(expr)
+        self.binary_expr(Parser::addition,
+                         &vec![
+                             TokenType::Greater,
+                             TokenType::GreaterEqual,
+                             TokenType::Less,
+                             TokenType::LessEqual,
+                         ],
+                         Parser::addition
+        )
     }
 
     fn addition(&mut self) -> ParseResult<Box<Expr>> {
-        let mut expr = self.multiplication()?;
-        while self.match_token(vec![TokenType::Minus, TokenType::Plus]) {
-            let operator = self.previous().clone();
-            let right = self.multiplication()?;
-            expr = Box::new(Expr::Binary {
-                left: expr,
-                operator: operator,
-                right: right,
-            })
-        }
-
-        Ok(expr)
+        self.binary_expr(Parser::multiplication,
+                         &vec![TokenType::Minus, TokenType::Plus],
+                         Parser::multiplication
+        )
     }
 
     fn multiplication(&mut self) -> ParseResult<Box<Expr>> {
-        let mut expr = self.unary()?;
-        while self.match_token(vec![TokenType::Slash, TokenType::Star]) {
-            let operator = self.previous().clone();
-            let right = self.unary()?;
-            expr = Box::new(Expr::Binary {
-                left: expr,
-                operator: operator,
-                right: right,
-            })
-        }
-
-        Ok(expr)
+        self.binary_expr(Parser::unary,
+                         &vec![TokenType::Slash, TokenType::Star],
+                         Parser::unary
+        )
     }
 
     fn unary(&mut self) -> ParseResult<Box<Expr>> {
-        if self.match_token(vec![TokenType::Bang, TokenType::Minus]) {
+        if self.match_token(&vec![TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous().clone();
             let right = self.unary()?;
             Ok(Box::new(Expr::Unary {
@@ -252,7 +240,7 @@ impl Parser {
         }
     }
 
-    fn match_token(&mut self, token_types: Vec<TokenType>) -> bool {
+    fn match_token(&mut self, token_types: &Vec<TokenType>) -> bool {
         for t in token_types {
             if self.check(&t) {
                 self.advance();
