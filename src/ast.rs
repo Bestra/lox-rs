@@ -32,23 +32,27 @@ pub enum Expr {
 
 #[derive(Debug)]
 pub enum Statement {
-    Expression {
-        expression: Box<Expr>,
-    },
-    Print {
-        expression: Box<Expr>,
-    },
-    Var {
-        name: Token,
-        initializer: Option<Box<Expr>>,
-    },
     Block {
         statements: Vec<Statement>,
+    },
+    Expression {
+        expression: Box<Expr>,
     },
     If {
         condition: Box<Expr>,
         then_branch: Box<Statement>,
         else_branch: Option<Box<Statement>>,
+    },
+    Print {
+        expression: Box<Expr>,
+    },
+    While {
+        condition: Box<Expr>,
+        body: Box<Statement>,
+    },
+    Var {
+        name: Token,
+        initializer: Option<Box<Expr>>,
     },
 }
 
@@ -101,6 +105,16 @@ impl AstPrint for Statement {
                     else_str
                 )
             }
+
+            Statement::While {
+                ref condition,
+                ref body,
+            } => format!(
+                "({} {} {})",
+                "while",
+                condition.pretty_print(),
+                body.pretty_print()
+            ),
 
             Statement::Var {
                 ref name,
