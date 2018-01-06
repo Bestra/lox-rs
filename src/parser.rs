@@ -73,7 +73,74 @@ impl Parser {
             return self.while_statement();
         }
 
+        if self.match_token(&[TokenType::For]) {
+            return self.for_statement();
+        }
+
         self.expression_statement()
+    }
+
+    fn for_statement(&mut self) -> ParseResult<Statement> {
+        self.consume(TokenType::LeftParen, "Expect '(' after 'for'.")?;
+        let initializer = if self.match_token(&[TokenType::Semicolon]) {
+            None
+        } else if self.match_token(&[TokenType::Var]) {
+            Some(self.var_declaration()?)
+        } else {
+            Some(self.expression_statement()?)
+        };
+
+        let for_condition = if !self.check(&TokenType::Semicolon) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+        self.consume(TokenType::Semicolon, "Expect ';' after loop condition.")?;
+
+        let for_increment = if !self.check(&TokenType::RightParen) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+        self.consume(TokenType::RightParen, "Expect ')' after 'for' clauses.")?;
+
+        let mut body = self.statement()?;
+        if let Some(increment) = for_increment {
+            body = Statement::Block {
+                statements: vec![
+                    body,
+                    Statement::Expression {
+                        expression: increment,
+                    },
+                ],
+            };
+        }
+
+        match for_condition {
+            None => {
+                let loop_condition = Expr::Literal {
+                    value: LoxValue::Bool(true),
+                };
+                body = Statement::While {
+                    condition: Box::new(loop_condition),
+                    body: Box::new(body),
+                };
+            }
+            Some(c) => {
+                body = Statement::While {
+                    condition: c,
+                    body: Box::new(body),
+                };
+            }
+        }
+
+        if let Some(i) = initializer {
+            body = Statement::Block {
+                statements: vec![i, body],
+            };
+        }
+
+        Ok(body)
     }
 
     fn while_statement(&mut self) -> ParseResult<Statement> {
