@@ -30,9 +30,9 @@ fn interpret_file(path: &str) {
 
     let mut parser = Parser::new(scanner.tokens);
     match parser.parse() {
-        Ok(output) => {
-            println!("{}", output.pretty_print());
-            match interpreter.interpret(output) {
+        Ok(ast) => {
+            // println!("{}", ast.pretty_print());
+            match interpreter.interpret(ast) {
                 Ok(_) => (),
                 Err(e) => eprintln!("{}", e),
             }
@@ -55,7 +55,7 @@ fn repl() {
             Ok(output) => {
                 println!("{}", output.pretty_print());
                 match interpreter.interpret(output) {
-                    Ok(o) => println!("{}", o),
+                    Ok(_) => (),
                     Err(e) => eprintln!("{}", e),
                 }
             }

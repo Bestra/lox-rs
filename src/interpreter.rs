@@ -71,15 +71,15 @@ impl Interpreter {
         }
     }
 
-    pub fn interpret(&mut self, e: Program) -> IResult<bool> {
+    pub fn interpret(&mut self, e: Program) -> IResult<()> {
         for s in e.statements {
             self.execute(&s)?;
         }
 
-        Ok(true)
+        Ok(())
     }
 
-    fn execute(&mut self, s: &Statement) -> IResult<bool> {
+    fn execute(&mut self, s: &Statement) -> IResult<()> {
         match *s {
             Statement::Block { ref statements } => {
                 let parent = self.environment.clone();
@@ -87,7 +87,7 @@ impl Interpreter {
             }
             Statement::Expression { ref expression } => {
                 self.evaluate(&*expression)?;
-                Ok(true)
+                Ok(())
             }
             Statement::If {
                 ref condition,
@@ -99,12 +99,12 @@ impl Interpreter {
                 } else if let Some(ref b) = *else_branch {
                     self.execute(&*b)?;
                 }
-                Ok(true)
+                Ok(())
             }
             Statement::Print { ref expression } => {
                 let val = self.evaluate(&*expression)?;
                 println!("{}", val);
-                Ok(true)
+                Ok(())
             }
             Statement::Var {
                 ref name,
@@ -116,7 +116,7 @@ impl Interpreter {
                 };
 
                 self.environment.define(name.lexeme.clone(), val.clone());
-                Ok(true)
+                Ok(())
             }
             Statement::While {
                 ref condition,
@@ -125,12 +125,12 @@ impl Interpreter {
                 while is_truthy(&self.evaluate(&*condition)?) {
                     self.execute(&*body)?;
                 }
-                Ok(true)
+                Ok(())
             }
         }
     }
 
-    fn execute_block(&mut self, statements: &[Statement], env: Environment) -> IResult<bool> {
+    fn execute_block(&mut self, statements: &[Statement], env: Environment) -> IResult<()> {
         let previous_env = replace(&mut self.environment, env);
         for s in statements {
             match self.execute(s) {
@@ -144,7 +144,7 @@ impl Interpreter {
 
         let used_env = replace(&mut self.environment, previous_env);
         self.environment = *(used_env.enclosing.unwrap()).clone();
-        Ok(true)
+        Ok(())
     }
 
     fn evaluate(&mut self, e: &Expr) -> IResult<LoxValue> {
@@ -179,7 +179,7 @@ impl Interpreter {
             } => {
                 let l_val = self.evaluate(&*left)?;
                 let r_val = self.evaluate(&*right)?;
-                let _ok = check_number_operands(operator, &l_val, &r_val)?;
+                check_number_operands(operator, &l_val, &r_val)?;
 
                 match (operator.token_type.clone(), l_val, r_val) {
                     // Numerical operations
@@ -254,7 +254,7 @@ impl fmt::Display for RuntimeError {
     }
 }
 
-fn check_number_operands(t: &Token, a: &LoxValue, b: &LoxValue) -> IResult<bool> {
+fn check_number_operands(t: &Token, a: &LoxValue, b: &LoxValue) -> IResult<()> {
     match t.token_type {
         TokenType::Minus
         | TokenType::Slash
@@ -263,13 +263,13 @@ fn check_number_operands(t: &Token, a: &LoxValue, b: &LoxValue) -> IResult<bool>
         | TokenType::GreaterEqual
         | TokenType::Less
         | TokenType::LessEqual => match (a, b) {
-            (&LoxValue::Number(_), &LoxValue::Number(_)) => Ok(true),
+            (&LoxValue::Number(_), &LoxValue::Number(_)) => Ok(()),
             (_, _) => Err(RuntimeError {
                 token: t.clone(),
                 message: format!("Operands {:?} and {:?} must both be numbers.", a, b),
             }),
         },
-        _ => Ok(true),
+        _ => Ok(()),
     }
 }
 
