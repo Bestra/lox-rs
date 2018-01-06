@@ -33,7 +33,7 @@ fn interpret_file(path: &str) {
         Ok(output) => {
             println!("{}", output.pretty_print());
             match interpreter.interpret(output) {
-                Ok(o) => println!("{}", o),
+                Ok(_) => (),
                 Err(e) => eprintln!("{}", e),
             }
         }
