@@ -3,6 +3,8 @@ use std::fmt;
 use std::mem::replace;
 use token::{LoxValue, Token, TokenType};
 use std::collections::HashMap;
+use lox_callable::{LoxCallable, LoxFunction};
+use std::rc::Rc;
 
 pub struct RuntimeError {
     token: Token,
@@ -12,24 +14,24 @@ pub struct RuntimeError {
 type IResult<T> = Result<T, RuntimeError>;
 
 #[derive(Clone)]
-struct Environment {
+pub struct Environment {
     values: HashMap<String, LoxValue>,
     enclosing: Option<Box<Environment>>,
 }
 
 impl Environment {
-    fn new(enclosing: Option<Box<Environment>>) -> Environment {
+    pub fn new(enclosing: Option<Box<Environment>>) -> Environment {
         Environment {
             values: HashMap::new(),
             enclosing,
         }
     }
 
-    fn define(&mut self, name: String, value: LoxValue) -> () {
+    pub fn define(&mut self, name: String, value: LoxValue) -> () {
         self.values.insert(name, value);
     }
 
-    fn get(&mut self, name: &Token) -> IResult<LoxValue> {
+    pub fn get(&mut self, name: &Token) -> IResult<LoxValue> {
         let lexeme = name.lexeme.clone();
         match self.values.get(&lexeme) {
             Some(v) => Ok(v.to_owned()),
@@ -43,7 +45,7 @@ impl Environment {
         }
     }
 
-    fn assign(&mut self, name: Token, value: LoxValue) -> IResult<LoxValue> {
+    pub fn assign(&mut self, name: Token, value: LoxValue) -> IResult<LoxValue> {
         let lexeme = name.lexeme.clone();
         if self.values.contains_key(&name.lexeme) {
             self.values.insert(name.lexeme, value.to_owned());
@@ -62,12 +64,14 @@ impl Environment {
 
 pub struct Interpreter {
     environment: Environment,
+    pub globals: Environment,
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
             environment: Environment::new(None),
+            globals: Environment::new(None),
         }
     }
 
@@ -87,6 +91,12 @@ impl Interpreter {
             }
             Statement::Expression { ref expression } => {
                 self.evaluate(&*expression)?;
+                Ok(())
+            }
+            Statement::Function (ref stmt) => {
+                let c = stmt.clone();
+                let function = LoxFunction::new(c);
+                self.environment.define(stmt.name.lexeme.clone(), LoxValue::Fn(Rc::new(function)));
                 Ok(())
             }
             Statement::If {
@@ -130,7 +140,7 @@ impl Interpreter {
         }
     }
 
-    fn execute_block(&mut self, statements: &[Statement], env: Environment) -> IResult<()> {
+    pub fn execute_block(&mut self, statements: &[Statement], env: Environment) -> IResult<()> {
         let previous_env = replace(&mut self.environment, env);
         for s in statements {
             match self.execute(s) {
@@ -155,6 +165,26 @@ impl Interpreter {
             } => {
                 let val = self.evaluate(&*value)?;
                 self.environment.assign(name.clone(), val)
+            }
+            Expr::Call {
+                ref callee,
+                ref paren,
+                ref arguments,
+            } => {
+                let c = self.evaluate(&*callee)?;
+                let mut args = Vec::new();
+                for a in arguments {
+                    let arg_val = self.evaluate(&*a)?;
+                    args.push(arg_val);
+                }
+
+                match into_callable(c) {
+                    Some(f) => f.call(self, args),
+                    None => Err(RuntimeError {
+                            token: paren.clone(),
+                            message: format!("Expression is not callable"),
+                        })
+                }
             }
             Expr::Literal { ref value } => Ok(value.clone()),
             Expr::Grouping { ref expression } => self.evaluate(&*expression),
@@ -282,5 +312,12 @@ fn is_truthy(e: &LoxValue) -> bool {
         LoxValue::Nil => false,
         LoxValue::Bool(b) => b,
         _ => true,
+    }
+}
+
+fn into_callable(e: LoxValue) -> Option<Rc<LoxCallable>> {
+    match e {
+        LoxValue::Fn(f) => Some(f),
+        _ => None,
     }
 }

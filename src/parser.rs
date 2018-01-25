@@ -1,5 +1,5 @@
 use token::{LoxValue, Token, TokenType};
-use ast::{Expr, Program, Statement};
+use ast::{Expr, FunctionDeclaration, Program, Statement};
 
 #[derive(Debug)]
 pub struct ParseError {
@@ -34,9 +34,37 @@ impl Parser {
     fn declaration(&mut self) -> Result<Statement, ParseError> {
         if self.match_token(&[TokenType::Var]) {
             self.var_declaration()
+        } else if self.match_token(&[TokenType::Fun]) {
+            self.function("function")
         } else {
             self.statement()
         }
+    }
+
+    fn function(&mut self, kind: &str) -> ParseResult<Statement> {
+        let name = self.consume(TokenType::Identifier, "Expect function name.")?.clone();
+        self.consume(TokenType::LeftParen, "Expect '(' after function name.")?;
+        let mut params = Vec::new();
+        if !self.check(&TokenType::RightParen) {
+            loop {
+                if params.len() >= 8 {
+                    return Err(ParseError {
+                        token: self.peek().clone(),
+                        message: "Cannot have more than 8 parameters.".to_string()}
+                    );
+                }
+                let p = self.consume(TokenType::Identifier, "Expect parameter name.")?.clone();
+                params.push(p);
+                if !self.match_token(&[TokenType::Comma]) {
+                    break
+                }
+            }
+        }
+        self.consume(TokenType::RightParen, "Expect ')' after parameters.")?;
+
+        self.consume(TokenType::LeftBrace, "Expect '{' before function body.")?;
+        let body = self.block()?;
+        Ok(Statement::Function(FunctionDeclaration { name: name, body: body, parameters: params }))
     }
 
     fn var_declaration(&mut self) -> Result<Statement, ParseError> {
@@ -313,8 +341,42 @@ impl Parser {
                 right: right,
             }))
         } else {
-            self.primary()
+            self.call()
         }
+    }
+
+    fn call(&mut self) -> ParseResult<Box<Expr>> {
+        let mut expr = self.primary()?;
+        loop {
+            if self.match_token(&[TokenType::LeftParen]) {
+                expr = self.finish_call(expr)?;
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
+    fn finish_call(&mut self, callee: Box<Expr>) -> ParseResult<Box<Expr>>{
+        let mut arguments = Vec::new();
+        if !self.check(&TokenType::RightParen) {
+            loop {
+                if arguments.len() >= 8 {
+                   // TODO: This should not make the parser blow up
+                   return Err(ParseError {
+                        token: self.peek().clone(),
+                        message: "Cannot have more than 8 arguments".to_string(),
+                    });
+                }
+                let next_expr = self.expression()?;
+                arguments.push(*next_expr);
+                if !self.match_token(&[TokenType::Comma]) { break; }
+            }
+        }
+
+        let paren = self.consume(TokenType::RightParen, "Expect ')' after arguments.")?.clone();
+        Ok(Box::new(Expr::Call { callee, paren, arguments }))
     }
 
     fn primary(&mut self) -> ParseResult<Box<Expr>> {

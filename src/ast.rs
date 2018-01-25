@@ -1,5 +1,5 @@
 use token::{LoxValue, Token};
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Assign {
         name: Token,
@@ -9,6 +9,11 @@ pub enum Expr {
         left: Box<Expr>,
         right: Box<Expr>,
         operator: Token,
+    },
+    Call {
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>,
     },
     Grouping {
         expression: Box<Expr>,
@@ -30,7 +35,14 @@ pub enum Expr {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub struct FunctionDeclaration {
+    pub name: Token,
+    pub parameters: Vec<Token>,
+    pub body: Vec<Statement>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Statement {
     Block {
         statements: Vec<Statement>,
@@ -38,6 +50,7 @@ pub enum Statement {
     Expression {
         expression: Box<Expr>,
     },
+    Function(FunctionDeclaration),
     If {
         condition: Box<Expr>,
         then_branch: Box<Statement>,
