@@ -7,7 +7,6 @@ use std::io::prelude::*;
 use std::env;
 
 use lox::parser::Parser;
-use lox::ast::AstPrint;
 use lox::interpreter::Interpreter;
 
 fn main() {
@@ -53,7 +52,7 @@ fn repl() {
         let mut parser = Parser::new(scanner.tokens);
         match parser.parse() {
             Ok(output) => {
-                println!("{}", output.pretty_print());
+                // println!("{}", output.pretty_print());
                 match interpreter.interpret(output) {
                     Ok(_) => (),
                     Err(e) => eprintln!("{}", e),
