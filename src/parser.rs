@@ -42,7 +42,8 @@ impl Parser {
     }
 
     fn function(&mut self, kind: &str) -> ParseResult<Statement> {
-        let name = self.consume(TokenType::Identifier, "Expect function name.")?.clone();
+        let name = self.consume(TokenType::Identifier, "Expect function name.")?
+            .clone();
         self.consume(TokenType::LeftParen, "Expect '(' after function name.")?;
         let mut params = Vec::new();
         if !self.check(&TokenType::RightParen) {
@@ -50,13 +51,14 @@ impl Parser {
                 if params.len() >= 8 {
                     return Err(ParseError {
                         token: self.peek().clone(),
-                        message: "Cannot have more than 8 parameters.".to_string()}
-                    );
+                        message: "Cannot have more than 8 parameters.".to_string(),
+                    });
                 }
-                let p = self.consume(TokenType::Identifier, "Expect parameter name.")?.clone();
+                let p = self.consume(TokenType::Identifier, "Expect parameter name.")?
+                    .clone();
                 params.push(p);
                 if !self.match_token(&[TokenType::Comma]) {
-                    break
+                    break;
                 }
             }
         }
@@ -64,7 +66,11 @@ impl Parser {
 
         self.consume(TokenType::LeftBrace, "Expect '{' before function body.")?;
         let body = self.block()?;
-        Ok(Statement::Function(FunctionDeclaration { name: name, body: body, parameters: params }))
+        Ok(Statement::Function(FunctionDeclaration {
+            name: name,
+            body: body,
+            parameters: params,
+        }))
     }
 
     fn var_declaration(&mut self) -> Result<Statement, ParseError> {
@@ -211,7 +217,7 @@ impl Parser {
         };
 
         self.consume(TokenType::Semicolon, "Expect ';' after return value.")?;
-        return Ok(Statement::Return { keyword, value });
+        Ok(Statement::Return { keyword, value })
     }
 
     fn if_statement(&mut self) -> ParseResult<Statement> {
@@ -373,25 +379,32 @@ impl Parser {
         Ok(expr)
     }
 
-    fn finish_call(&mut self, callee: Box<Expr>) -> ParseResult<Box<Expr>>{
+    fn finish_call(&mut self, callee: Box<Expr>) -> ParseResult<Box<Expr>> {
         let mut arguments = Vec::new();
         if !self.check(&TokenType::RightParen) {
             loop {
                 if arguments.len() >= 8 {
-                   // TODO: This should not make the parser blow up
-                   return Err(ParseError {
+                    // TODO: This should not make the parser blow up
+                    return Err(ParseError {
                         token: self.peek().clone(),
                         message: "Cannot have more than 8 arguments".to_string(),
                     });
                 }
                 let next_expr = self.expression()?;
                 arguments.push(*next_expr);
-                if !self.match_token(&[TokenType::Comma]) { break; }
+                if !self.match_token(&[TokenType::Comma]) {
+                    break;
+                }
             }
         }
 
-        let paren = self.consume(TokenType::RightParen, "Expect ')' after arguments.")?.clone();
-        Ok(Box::new(Expr::Call { callee, paren, arguments }))
+        let paren = self.consume(TokenType::RightParen, "Expect ')' after arguments.")?
+            .clone();
+        Ok(Box::new(Expr::Call {
+            callee,
+            paren,
+            arguments,
+        }))
     }
 
     fn primary(&mut self) -> ParseResult<Box<Expr>> {

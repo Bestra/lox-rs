@@ -73,7 +73,7 @@ pub enum LoxValue {
     Number(f64),
     Bool(bool),
     Nil,
-    Fn(Rc<LoxCallable>)
+    Fn(Rc<LoxCallable>),
 }
 
 impl PartialEq for LoxValue {
@@ -84,7 +84,7 @@ impl PartialEq for LoxValue {
             (&LoxValue::Bool(ref a), &LoxValue::Bool(ref b)) => a == b,
             (&LoxValue::Nil, &LoxValue::Nil) => true,
             (&LoxValue::Fn(ref a), &LoxValue::Fn(ref b)) => Rc::ptr_eq(a, b),
-            _ => false
+            _ => false,
         }
     }
 }

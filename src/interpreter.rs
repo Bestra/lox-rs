@@ -1,82 +1,27 @@
 use ast::{Expr, Program, Statement};
 use std::fmt;
-use std::mem::replace;
 use token::{LoxValue, Token, TokenType};
-use std::collections::HashMap;
 use lox_callable::{LoxCallable, LoxFunction};
+use environment::Environment;
 use std::rc::Rc;
 
 pub enum Error {
     Return(LoxValue),
-    RuntimeError {
-        token: Token,
-        message: String,
-    },
+    RuntimeError { token: Token, message: String },
 }
 
 pub struct ReturnValue(LoxValue);
 
 type IResult<T> = Result<T, Error>;
 
-#[derive(Clone)]
-pub struct Environment {
-    values: HashMap<String, LoxValue>,
-    enclosing: Option<Box<Environment>>,
-}
-
-impl Environment {
-    pub fn new(enclosing: Option<Box<Environment>>) -> Environment {
-        Environment {
-            values: HashMap::new(),
-            enclosing,
-        }
-    }
-
-    pub fn define(&mut self, name: String, value: LoxValue) -> () {
-        self.values.insert(name, value);
-    }
-
-    pub fn get(&mut self, name: &Token) -> IResult<LoxValue> {
-        let lexeme = name.lexeme.clone();
-        match self.values.get(&lexeme) {
-            Some(v) => Ok(v.to_owned()),
-            None => match self.enclosing {
-                Some(ref mut e) => e.get(name),
-                None => Err(Error::RuntimeError {
-                    token: name.clone(),
-                    message: format!("Undefined variable {}.", lexeme),
-                }),
-            },
-        }
-    }
-
-    pub fn assign(&mut self, name: Token, value: LoxValue) -> IResult<LoxValue> {
-        let lexeme = name.lexeme.clone();
-        if self.values.contains_key(&name.lexeme) {
-            self.values.insert(name.lexeme, value.to_owned());
-            Ok(value)
-        } else {
-            match self.enclosing {
-                Some(ref mut e) => e.assign(name, value),
-                None => Err(Error::RuntimeError {
-                    token: name,
-                    message: format!("Undefined variable {}.", lexeme),
-                }),
-            }
-        }
-    }
-}
-
 pub struct Interpreter {
-    environment: Environment,
-    pub globals: Environment,
+    pub environment: Environment,
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
-            environment: Environment::new(None),
-            globals: Environment::new(None),
+            environment: Environment::new(),
         }
     }
 
@@ -91,17 +36,20 @@ impl Interpreter {
     fn execute(&mut self, s: &Statement) -> IResult<()> {
         match *s {
             Statement::Block { ref statements } => {
-                let parent = self.environment.clone();
-                self.execute_block(statements, Environment::new(Some(Box::new(parent))))
+                self.environment.push();
+                let ret = self.execute_block(statements);
+                self.environment.pop();
+                ret
             }
             Statement::Expression { ref expression } => {
                 self.evaluate(&*expression)?;
                 Ok(())
             }
-            Statement::Function (ref stmt) => {
+            Statement::Function(ref stmt) => {
                 let c = stmt.clone();
                 let function = LoxFunction::new(c);
-                self.environment.define(stmt.name.lexeme.clone(), LoxValue::Fn(Rc::new(function)));
+                self.environment
+                    .define(stmt.name.lexeme.clone(), LoxValue::Fn(Rc::new(function)));
                 Ok(())
             }
             Statement::If {
@@ -121,7 +69,10 @@ impl Interpreter {
                 println!("{}", val);
                 Ok(())
             }
-            Statement::Return { ref keyword, ref value } => {
+            Statement::Return {
+                ref keyword,
+                ref value,
+            } => {
                 let val = match *value {
                     Some(ref v) => self.evaluate(&*v)?,
                     None => LoxValue::Nil,
@@ -152,20 +103,15 @@ impl Interpreter {
         }
     }
 
-    pub fn execute_block(&mut self, statements: &[Statement], env: Environment) -> IResult<()> {
-        let previous_env = replace(&mut self.environment, env);
+    pub fn execute_block(&mut self, statements: &[Statement]) -> IResult<()> {
         for s in statements {
             match self.execute(s) {
                 Ok(_r) => (),
                 Err(r) => {
-                    replace(&mut self.environment, previous_env);
                     return Err(r);
                 }
             }
         }
-
-        let used_env = replace(&mut self.environment, previous_env);
-        self.environment = *(used_env.enclosing.unwrap()).clone();
         Ok(())
     }
 
@@ -193,9 +139,9 @@ impl Interpreter {
                 match into_callable(c) {
                     Some(f) => f.call(self, args),
                     None => Err(Error::RuntimeError {
-                            token: paren.clone(),
-                            message: format!("Expression is not callable"),
-                        })
+                        token: paren.clone(),
+                        message: format!("Expression is not callable"),
+                    }),
                 }
             }
             Expr::Literal { ref value } => Ok(value.clone()),
@@ -293,11 +239,12 @@ impl Interpreter {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::RuntimeError { ref token, ref message } => {
-                write!(f, "Runtime error at {:?}: {}", token, message)
-            }
+            Error::RuntimeError {
+                ref token,
+                ref message,
+            } => write!(f, "Runtime error at {:?}: {}", token, message),
 
-            Error::Return(ref v) => write!(f, "Return {}", v)
+            Error::Return(ref v) => write!(f, "Return {}", v),
         }
     }
 }

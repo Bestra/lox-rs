@@ -4,6 +4,7 @@ mod token;
 pub mod ast;
 pub mod parser;
 pub mod interpreter;
+pub mod environment;
 mod lox_callable;
 use token::{LoxValue, Token, TokenType};
 
