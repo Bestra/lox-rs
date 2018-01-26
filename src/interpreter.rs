@@ -6,12 +6,17 @@ use std::collections::HashMap;
 use lox_callable::{LoxCallable, LoxFunction};
 use std::rc::Rc;
 
-pub struct RuntimeError {
-    token: Token,
-    message: String,
+pub enum Error {
+    Return(LoxValue),
+    RuntimeError {
+        token: Token,
+        message: String,
+    },
 }
 
-type IResult<T> = Result<T, RuntimeError>;
+pub struct ReturnValue(LoxValue);
+
+type IResult<T> = Result<T, Error>;
 
 #[derive(Clone)]
 pub struct Environment {
@@ -37,7 +42,7 @@ impl Environment {
             Some(v) => Ok(v.to_owned()),
             None => match self.enclosing {
                 Some(ref mut e) => e.get(name),
-                None => Err(RuntimeError {
+                None => Err(Error::RuntimeError {
                     token: name.clone(),
                     message: format!("Undefined variable {}.", lexeme),
                 }),
@@ -53,7 +58,7 @@ impl Environment {
         } else {
             match self.enclosing {
                 Some(ref mut e) => e.assign(name, value),
-                None => Err(RuntimeError {
+                None => Err(Error::RuntimeError {
                     token: name,
                     message: format!("Undefined variable {}.", lexeme),
                 }),
@@ -115,6 +120,13 @@ impl Interpreter {
                 let val = self.evaluate(&*expression)?;
                 println!("{}", val);
                 Ok(())
+            }
+            Statement::Return { ref keyword, ref value } => {
+                let val = match *value {
+                    Some(ref v) => self.evaluate(&*v)?,
+                    None => LoxValue::Nil,
+                };
+                Err(Error::Return(val))
             }
             Statement::Var {
                 ref name,
@@ -180,7 +192,7 @@ impl Interpreter {
 
                 match into_callable(c) {
                     Some(f) => f.call(self, args),
-                    None => Err(RuntimeError {
+                    None => Err(Error::RuntimeError {
                             token: paren.clone(),
                             message: format!("Expression is not callable"),
                         })
@@ -246,7 +258,7 @@ impl Interpreter {
                     (TokenType::Plus, LoxValue::String(a), LoxValue::String(b)) => {
                         Ok(LoxValue::String(format!("{}{}", a, b)))
                     }
-                    (_, a, b) => Err(RuntimeError {
+                    (_, a, b) => Err(Error::RuntimeError {
                         token: operator.clone(),
                         message: format!(
                             "There was some problem applying {:?} to operands {:?} and {:?}",
@@ -278,9 +290,15 @@ impl Interpreter {
     }
 }
 
-impl fmt::Display for RuntimeError {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Runtime error at {:?}: {}", self.token, self.message)
+        match *self {
+            Error::RuntimeError { ref token, ref message } => {
+                write!(f, "Runtime error at {:?}: {}", token, message)
+            }
+
+            Error::Return(ref v) => write!(f, "Return {}", v)
+        }
     }
 }
 
@@ -294,7 +312,7 @@ fn check_number_operands(t: &Token, a: &LoxValue, b: &LoxValue) -> IResult<()> {
         | TokenType::Less
         | TokenType::LessEqual => match (a, b) {
             (&LoxValue::Number(_), &LoxValue::Number(_)) => Ok(()),
-            (_, _) => Err(RuntimeError {
+            (_, _) => Err(Error::RuntimeError {
                 token: t.clone(),
                 message: format!("Operands {:?} and {:?} must both be numbers.", a, b),
             }),

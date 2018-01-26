@@ -1,12 +1,12 @@
 use token::LoxValue;
 use std::fmt;
-use interpreter::{Environment, Interpreter, RuntimeError};
+use interpreter::{Environment, Interpreter, Error};
 use std::time::{SystemTime, UNIX_EPOCH};
 use ast::{FunctionDeclaration};
 
 
 pub trait LoxCallable: fmt::Debug {
-    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<LoxValue>) -> Result<LoxValue, RuntimeError>;
+    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<LoxValue>) -> Result<LoxValue, Error>;
     fn arity(&self) -> usize;
     fn name(&self) -> &str;
 }
@@ -21,7 +21,7 @@ impl fmt::Display for LoxCallable {
 #[derive(Debug)]
 pub struct Clock;
 impl LoxCallable for Clock {
-    fn call(&self, _interpreter: &mut Interpreter, _arguments: Vec<LoxValue>) -> Result<LoxValue, RuntimeError> {
+    fn call(&self, _interpreter: &mut Interpreter, _arguments: Vec<LoxValue>) -> Result<LoxValue, Error> {
         let t = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
         Ok(LoxValue::Number(t as f64))
     }
@@ -48,14 +48,17 @@ impl LoxFunction {
 }
 
 impl LoxCallable for LoxFunction {
-    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<LoxValue>) -> Result<LoxValue, RuntimeError> {
+    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<LoxValue>) -> Result<LoxValue, Error> {
         let mut env = Environment::new(Some(Box::new(interpreter.globals.clone())));
         for (p, arg) in self.declaration.parameters.iter().zip(arguments.into_iter()) {
             env.define(p.lexeme.clone(), arg);
         }
 
-        interpreter.execute_block(&self.declaration.body, env.clone())?;
-        Ok(LoxValue::Nil)
+        match interpreter.execute_block(&self.declaration.body, env.clone()) {
+            Ok(_) => Ok(LoxValue::Nil),
+            Err(Error::Return(v)) => Ok(v),
+            Err(e) => Err(e),
+        }
     }
     fn arity(&self) -> usize {
         self.declaration.parameters.len()

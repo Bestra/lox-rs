@@ -59,6 +59,10 @@ pub enum Statement {
     Print {
         expression: Box<Expr>,
     },
+    Return {
+        keyword: Token,
+        value: Option<Box<Expr>>,
+    },
     While {
         condition: Box<Expr>,
         body: Box<Statement>,
