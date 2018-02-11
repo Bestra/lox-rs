@@ -8,6 +8,8 @@ use std::env;
 
 use lox::parser::Parser;
 use lox::interpreter::Interpreter;
+use lox::scanner::Scanner;
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -24,7 +26,7 @@ fn interpret_file(path: &str) {
     buf_reader.read_to_string(&mut contents).unwrap();
 
     let mut interpreter = Interpreter::new();
-    let mut scanner = lox::Scanner::new(contents);
+    let mut scanner = Scanner::new(contents);
     scanner.scan_tokens();
 
     let mut parser = Parser::new(scanner.tokens);
@@ -46,7 +48,7 @@ fn repl() {
     loop {
         let input = rprompt::prompt_reply_stdout(">").unwrap();
 
-        let mut scanner = lox::Scanner::new(input);
+        let mut scanner = Scanner::new(input);
         scanner.scan_tokens();
 
         let mut parser = Parser::new(scanner.tokens);
