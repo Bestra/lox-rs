@@ -1,7 +1,7 @@
 use ast::{Expr, Program, Statement};
 use std::fmt;
 use token::{LoxValue, Token, TokenType};
-use lox_callable::{LoxCallable, LoxFunction};
+use lox_callable::{LoxCallable, LoxFunction, Clock};
 use environment::Environment;
 use std::rc::Rc;
 
@@ -20,8 +20,10 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Interpreter {
+        let mut env = Environment::new();
+        env.define("clock".to_string(), LoxValue::Fn(Rc::new(Clock)));
         Interpreter {
-            environment: Environment::new(),
+            environment: env,
         }
     }
 
