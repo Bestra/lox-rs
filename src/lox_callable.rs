@@ -3,7 +3,8 @@ use std::fmt;
 use interpreter::{Error, Interpreter};
 use std::time::{SystemTime, UNIX_EPOCH};
 use ast::FunctionDeclaration;
-
+use environment::Environment;
+use std::mem::replace;
 pub trait LoxCallable: fmt::Debug {
     fn call(
         &self,
@@ -47,11 +48,16 @@ impl LoxCallable for Clock {
 #[derive(Debug)]
 pub struct LoxFunction {
     declaration: FunctionDeclaration,
+    closure: Environment,
 }
 
 impl LoxFunction {
-    pub fn new(declaration: FunctionDeclaration) -> LoxFunction {
-        LoxFunction { declaration }
+    pub fn new(declaration: FunctionDeclaration, env: &Environment) -> LoxFunction {
+        let closure = Environment::from(env);
+        LoxFunction {
+            declaration,
+            closure,
+        }
     }
 }
 
@@ -61,6 +67,10 @@ impl LoxCallable for LoxFunction {
         interpreter: &mut Interpreter,
         arguments: Vec<LoxValue>,
     ) -> Result<LoxValue, Error> {
+        // we need to evaluate the function in the context of its closure,
+        // not whatever the interpreter's current environment is.
+        let old_env = replace(&mut interpreter.environment, Environment::from(&self.closure));
+
         interpreter.environment.push();
         for (p, arg) in self.declaration
             .parameters
@@ -76,6 +86,9 @@ impl LoxCallable for LoxFunction {
             Err(e) => Err(e),
         };
         interpreter.environment.pop();
+
+        // swap the environment back
+        interpreter.environment = old_env;
         ret
     }
     fn arity(&self) -> usize {

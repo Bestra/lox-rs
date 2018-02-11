@@ -1,7 +1,7 @@
 use ast::{Expr, Program, Statement};
 use std::fmt;
 use token::{LoxValue, Token, TokenType};
-use lox_callable::{LoxCallable, LoxFunction, Clock};
+use lox_callable::{Clock, LoxCallable, LoxFunction};
 use environment::Environment;
 use std::rc::Rc;
 
@@ -22,9 +22,7 @@ impl Interpreter {
     pub fn new() -> Interpreter {
         let mut env = Environment::new();
         env.define("clock".to_string(), LoxValue::Fn(Rc::new(Clock)));
-        Interpreter {
-            environment: env,
-        }
+        Interpreter { environment: env }
     }
 
     pub fn interpret(&mut self, e: Program) -> IResult<()> {
@@ -49,7 +47,7 @@ impl Interpreter {
             }
             Statement::Function(ref stmt) => {
                 let c = stmt.clone();
-                let function = LoxFunction::new(c);
+                let function = LoxFunction::new(c, &self.environment);
                 self.environment
                     .define(stmt.name.lexeme.clone(), LoxValue::Fn(Rc::new(function)));
                 Ok(())

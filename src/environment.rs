@@ -16,6 +16,12 @@ fn new_binding() -> Bindings {
 }
 
 impl Environment {
+    pub fn from(source_env: &Environment) -> Environment {
+        Environment {
+            stack: source_env.stack.iter().map(|e| Rc::clone(e)).collect(),
+        }
+    }
+
     pub fn new() -> Environment {
         Environment {
             stack: vec![new_binding()],
@@ -49,9 +55,7 @@ impl Environment {
         let lexeme = name.lexeme.clone();
 
         match self.find_frame_for_var(&lexeme) {
-            Some(stack_frame) => {
-                Ok(stack_frame.borrow_mut().get(&lexeme).unwrap().to_owned())
-            }
+            Some(stack_frame) => Ok(stack_frame.borrow_mut().get(&lexeme).unwrap().to_owned()),
             None => Err(Error::RuntimeError {
                 token: name.clone(),
                 message: format!("Undefined variable {}.", lexeme),
