@@ -1,6 +1,7 @@
 use std::fmt;
 use lox_callable::LoxCallable;
 use std::rc::Rc;
+use std::hash::{Hash, Hasher};
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     Eof,
@@ -105,6 +106,21 @@ impl fmt::Display for LoxValue {
 pub struct Token {
     pub lexeme: String,
     pub line: usize,
+    pub position: usize,
     pub literal: LoxValue,
     pub token_type: TokenType,
 }
+
+impl Hash for Token {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.position.hash(state);
+    }
+}
+
+impl PartialEq for Token {
+    fn eq(&self, other: &Token) -> bool {
+        self.position == other.position
+    }
+}
+
+impl Eq for Token {}

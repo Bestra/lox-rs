@@ -4,6 +4,7 @@ use token::{LoxValue, Token, TokenType};
 use lox_callable::{Clock, LoxCallable, LoxFunction};
 use environment::Environment;
 use std::rc::Rc;
+use std::collections::HashMap;
 
 pub enum Error {
     Return(LoxValue),
@@ -16,13 +17,17 @@ type IResult<T> = Result<T, Error>;
 
 pub struct Interpreter {
     pub environment: Environment,
+    locals: HashMap<String, usize>,
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
         let mut env = Environment::new();
         env.define("clock".to_string(), LoxValue::Fn(Rc::new(Clock)));
-        Interpreter { environment: env }
+        Interpreter {
+            environment: env,
+            locals: HashMap::new(),
+        }
     }
 
     pub fn interpret(&mut self, e: Program) -> IResult<()> {
@@ -70,8 +75,8 @@ impl Interpreter {
                 Ok(())
             }
             Statement::Return {
-                ref keyword,
                 ref value,
+                ..
             } => {
                 let val = match *value {
                     Some(ref v) => self.evaluate(&*v)?,
@@ -103,6 +108,11 @@ impl Interpreter {
         }
     }
 
+    // note that idx 0 would be globals
+    pub fn resolve(&mut self, e: &Expr, idx: usize) {
+        self.locals.insert(e.string_id(), idx);
+    }
+
     pub fn execute_block(&mut self, statements: &[Statement]) -> IResult<()> {
         for s in statements {
             match self.execute(s) {
@@ -122,7 +132,8 @@ impl Interpreter {
                 ref value,
             } => {
                 let val = self.evaluate(&*value)?;
-                self.environment.assign(name.clone(), val)
+                let idx = self.locals.get(&e.string_id()).unwrap_or(&0);
+                self.environment.assign_at(*idx, &name.clone(), val)
             }
             Expr::Call {
                 ref callee,
@@ -144,8 +155,14 @@ impl Interpreter {
                     }),
                 }
             }
-            Expr::Literal { ref value } => Ok(value.clone()),
-            Expr::Grouping { ref expression } => self.evaluate(&*expression),
+            Expr::Literal {
+                ref value,
+                ..
+            } => Ok(value.clone()),
+            Expr::Grouping {
+                ref expression,
+                ..
+            } => self.evaluate(&*expression),
             Expr::Unary {
                 ref right,
                 ref operator,
@@ -231,8 +248,14 @@ impl Interpreter {
                 self.evaluate(&*right)
             }
 
-            Expr::Variable { ref name } => self.environment.get(name),
+            Expr::Variable { ref name } => self.look_up_variable(name, &e),
         }
+    }
+
+    fn look_up_variable(&mut self, name: &Token, e: &Expr) -> Result<LoxValue, Error> {
+        // if locals don't have the expr then it must be a global (top of the environment stack)
+        let idx = self.locals.get(&e.string_id()).unwrap_or(&0);
+        self.environment.get_at(*idx, name)
     }
 }
 

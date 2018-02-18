@@ -51,6 +51,13 @@ impl Environment {
         values.borrow_mut().insert(name, value);
     }
 
+    pub fn get_at(&mut self, idx: usize, name: &Token) -> Result<LoxValue, Error> {
+        let lexeme = name.lexeme.clone();
+        let stack_frame = self.stack.get(idx).unwrap();
+
+        Ok(stack_frame.borrow_mut().get(&lexeme).unwrap().to_owned())
+    }
+
     pub fn get(&mut self, name: &Token) -> Result<LoxValue, Error> {
         let lexeme = name.lexeme.clone();
 
@@ -75,5 +82,13 @@ impl Environment {
                 message: format!("Undefined variable {}.", lexeme),
             }),
         }
+    }
+
+    pub fn assign_at(&mut self, idx: usize, name: &Token, value: LoxValue) -> Result<LoxValue, Error> {
+        let lexeme = name.lexeme.clone();
+        let stack_frame = self.stack.get(idx).unwrap();
+
+        stack_frame.borrow_mut().insert(lexeme, value.to_owned());
+        Ok(value)
     }
 }

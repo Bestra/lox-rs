@@ -157,6 +157,7 @@ impl Parser {
             None => {
                 let loop_condition = Expr::Literal {
                     value: LoxValue::Bool(true),
+                    token: self.previous().clone(),
                 };
                 body = Statement::While {
                     condition: Box::new(loop_condition),
@@ -411,20 +412,27 @@ impl Parser {
         match self.advance().token_type {
             TokenType::True => Ok(Expr::Literal {
                 value: LoxValue::Bool(true),
+                token: self.previous().clone(),
             }),
             TokenType::False => Ok(Expr::Literal {
                 value: LoxValue::Bool(false),
+                token: self.previous().clone(),
             }),
             TokenType::Nil => Ok(Expr::Literal {
                 value: LoxValue::Nil,
+                token: self.previous().clone(),
             }),
             TokenType::Number | TokenType::String => Ok(Expr::Literal {
                 value: self.previous().clone().literal,
+                token: self.previous().clone(),
             }),
             TokenType::LeftParen => {
                 let expression = self.expression()?;
                 self.consume(TokenType::RightParen, "Expect ')' after expression.")?;
-                Ok(Expr::Grouping { expression })
+                Ok(Expr::Grouping {
+                    expression,
+                    token: self.previous().clone(),
+                })
             }
 
             TokenType::Identifier => {

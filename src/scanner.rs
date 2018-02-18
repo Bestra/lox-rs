@@ -39,6 +39,7 @@ impl Scanner {
             token_type: TokenType::Eof,
             lexeme: "".to_string(),
             literal: LoxValue::Nil,
+            position: self.start,
             line: self.line,
         };
         self.tokens.push(end);
@@ -172,6 +173,7 @@ impl Scanner {
         let lexeme = &self.source[start..current];
         let token = Token {
             token_type: t,
+            position: self.start,
             lexeme: lexeme.to_string(),
             literal: l,
             line: self.line,

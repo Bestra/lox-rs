@@ -69,7 +69,10 @@ impl LoxCallable for LoxFunction {
     ) -> Result<LoxValue, Error> {
         // we need to evaluate the function in the context of its closure,
         // not whatever the interpreter's current environment is.
-        let old_env = replace(&mut interpreter.environment, Environment::from(&self.closure));
+        let old_env = replace(
+            &mut interpreter.environment,
+            Environment::from(&self.closure),
+        );
 
         interpreter.environment.push();
         for (p, arg) in self.declaration

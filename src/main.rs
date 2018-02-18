@@ -9,7 +9,7 @@ use std::env;
 use lox::parser::Parser;
 use lox::interpreter::Interpreter;
 use lox::scanner::Scanner;
-
+use lox::resolver::Resolver;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -25,7 +25,6 @@ fn interpret_file(path: &str) {
     let mut contents = String::new();
     buf_reader.read_to_string(&mut contents).unwrap();
 
-    let mut interpreter = Interpreter::new();
     let mut scanner = Scanner::new(contents);
     scanner.scan_tokens();
 
@@ -33,9 +32,16 @@ fn interpret_file(path: &str) {
     match parser.parse() {
         Ok(ast) => {
             // println!("{}", ast.pretty_print());
-            match interpreter.interpret(ast) {
-                Ok(_) => (),
-                Err(e) => eprintln!("{}", e),
+            let mut interpreter = Interpreter::new();
+            let mut resolver = Resolver::new(interpreter);
+            match resolver.resolve(&ast) {
+                Ok(_) => {
+                    match resolver.interpreter.interpret(ast) {
+                        Ok(_) => (),
+                        Err(e) => eprintln!("{}", e),
+                    }
+                }
+                Err(e) => eprintln!("{:?}", e),
             }
         }
         Err(e) => eprintln!("{:?}", e),

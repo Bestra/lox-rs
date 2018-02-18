@@ -1,4 +1,6 @@
 use token::{LoxValue, Token};
+use std::hash::{Hash, Hasher};
+use std::cmp::{Eq, PartialEq};
 #[derive(Debug, Clone)]
 pub enum Expr {
     Assign {
@@ -17,9 +19,11 @@ pub enum Expr {
     },
     Grouping {
         expression: Box<Expr>,
+        token: Token,
     },
     Literal {
         value: LoxValue,
+        token: Token,
     },
     Logical {
         left: Box<Expr>,
@@ -33,6 +37,40 @@ pub enum Expr {
     Variable {
         name: Token,
     },
+}
+
+impl Expr {
+    fn token(&self) -> &Token {
+        match *self {
+            Expr::Assign { ref name, .. } => name,
+            Expr::Binary { ref operator, .. } => operator,
+            Expr::Call { ref paren, .. } => paren,
+            Expr::Grouping { ref token, .. } => token,
+            Expr::Literal { ref token, .. } => token,
+            Expr::Logical { ref operator, .. } => operator,
+            Expr::Unary { ref operator, .. } => operator,
+            Expr::Variable { ref name, .. } => name,
+        }
+    }
+
+    pub fn string_id(&self) -> String {
+        let t = self.token();
+        format!("{:?} {:?}", t.token_type, t.position)
+    }
+}
+
+impl PartialEq for Expr {
+    fn eq(&self, other: &Expr) -> bool {
+        self.token() == other.token()
+    }
+}
+
+impl Eq for Expr {}
+
+impl Hash for Expr {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.token().hash(state);
+    }
 }
 
 #[derive(Debug, Clone)]
