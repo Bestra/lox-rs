@@ -1,0 +1,9 @@
+var i = 3;
+{
+  print i; 
+  i = i + 1;
+  print "i for the inner block is";
+  print i;
+}
+print "i for the outer block is ";
+print i;
