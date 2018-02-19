@@ -42,14 +42,12 @@ pub enum Expr {
 impl Expr {
     fn token(&self) -> &Token {
         match *self {
-            Expr::Assign { ref name, .. } => name,
-            Expr::Binary { ref operator, .. } => operator,
+            Expr::Assign { ref name, .. } | Expr::Variable { ref name, .. } => name,
             Expr::Call { ref paren, .. } => paren,
-            Expr::Grouping { ref token, .. } => token,
-            Expr::Literal { ref token, .. } => token,
-            Expr::Logical { ref operator, .. } => operator,
-            Expr::Unary { ref operator, .. } => operator,
-            Expr::Variable { ref name, .. } => name,
+            Expr::Grouping { ref token, .. } | Expr::Literal { ref token, .. } => token,
+            Expr::Binary { ref operator, .. }
+            | Expr::Logical { ref operator, .. }
+            | Expr::Unary { ref operator, .. } => operator,
         }
     }
 

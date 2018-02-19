@@ -74,10 +74,7 @@ impl Interpreter {
                 println!("{}", val);
                 Ok(())
             }
-            Statement::Return {
-                ref value,
-                ..
-            } => {
+            Statement::Return { ref value, .. } => {
                 let val = match *value {
                     Some(ref v) => self.evaluate(&*v)?,
                     None => LoxValue::Nil,
@@ -155,14 +152,8 @@ impl Interpreter {
                     }),
                 }
             }
-            Expr::Literal {
-                ref value,
-                ..
-            } => Ok(value.clone()),
-            Expr::Grouping {
-                ref expression,
-                ..
-            } => self.evaluate(&*expression),
+            Expr::Literal { ref value, .. } => Ok(value.clone()),
+            Expr::Grouping { ref expression, .. } => self.evaluate(&*expression),
             Expr::Unary {
                 ref right,
                 ref operator,
@@ -248,7 +239,7 @@ impl Interpreter {
                 self.evaluate(&*right)
             }
 
-            Expr::Variable { ref name } => self.look_up_variable(name, &e),
+            Expr::Variable { ref name } => self.look_up_variable(name, e),
         }
     }
 

@@ -35,12 +35,10 @@ fn interpret_file(path: &str) {
             let mut interpreter = Interpreter::new();
             let mut resolver = Resolver::new(interpreter);
             match resolver.resolve(&ast) {
-                Ok(_) => {
-                    match resolver.interpreter.interpret(ast) {
-                        Ok(_) => (),
-                        Err(e) => eprintln!("{}", e),
-                    }
-                }
+                Ok(_) => match resolver.interpreter.interpret(ast) {
+                    Ok(_) => (),
+                    Err(e) => eprintln!("{}", e),
+                },
                 Err(e) => eprintln!("{:?}", e),
             }
         }

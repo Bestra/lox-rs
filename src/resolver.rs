@@ -39,18 +39,18 @@ impl Resolver {
     pub fn resolve(&mut self, p: &Program) -> Result<(), Error> {
         self.begin_scope();
         for s in &p.statements {
-            self.resolve_statement(&s)?;
+            self.resolve_statement(s)?;
         }
         self.end_scope();
         Ok(())
     }
 
-    pub fn visit_statement(&mut self, s: &Statement) -> Result<(), Error>  {
+    pub fn visit_statement(&mut self, s: &Statement) -> Result<(), Error> {
         match *s {
             Statement::Block { ref statements } => {
                 self.begin_scope();
                 for s in statements {
-                    self.resolve_statement(&s)?;
+                    self.resolve_statement(s)?;
                 }
                 self.end_scope();
             }
@@ -60,8 +60,8 @@ impl Resolver {
                 ref initializer,
             } => {
                 self.declare(name)?;
-                if let &Some(ref e) = initializer {
-                    self.resolve_expr(&e)?;
+                if let Some(ref e) = *initializer {
+                    self.resolve_expr(e)?;
                 }
                 self.define(name);
             }
@@ -69,10 +69,10 @@ impl Resolver {
             Statement::Function(ref statement) => {
                 self.declare(&statement.name)?;
                 self.define(&statement.name);
-                self.resolve_function(&statement, FunctionType::Fuction)?;
+                self.resolve_function(statement, FunctionType::Fuction)?;
             }
 
-            Statement::Expression { ref expression } => {
+            Statement::Expression { ref expression } | Statement::Print { ref expression } => {
                 self.resolve_expr(expression)?;
             }
 
@@ -83,13 +83,9 @@ impl Resolver {
             } => {
                 self.resolve_expr(condition)?;
                 self.resolve_statement(&*then_branch)?;
-                if let &Some(ref s) = else_branch {
-                    self.resolve_statement(&s)?;
+                if let Some(ref s) = *else_branch {
+                    self.resolve_statement(s)?;
                 }
-            }
-
-            Statement::Print { ref expression } => {
-                self.resolve_expr(expression)?;
             }
 
             Statement::Return {
@@ -100,14 +96,13 @@ impl Resolver {
                     FunctionType::None => {
                         return Err(Error {
                             token: keyword.clone(),
-                            message: "Cannot return from top-level code."
-                                .to_string(),
+                            message: "Cannot return from top-level code.".to_string(),
                         });
                     }
-                    FunctionType::Fuction => ()
+                    FunctionType::Fuction => (),
                 };
-                if let &Some(ref v) = value {
-                    self.resolve_expr(&v)?;
+                if let Some(ref v) = *value {
+                    self.resolve_expr(v)?;
                 }
             }
 
@@ -123,17 +118,20 @@ impl Resolver {
         Ok(())
     }
 
-    fn resolve_function(&mut self, function: &FunctionDeclaration, function_type: FunctionType) -> Result<(), Error> {
-
+    fn resolve_function(
+        &mut self,
+        function: &FunctionDeclaration,
+        function_type: FunctionType,
+    ) -> Result<(), Error> {
         let enclosing_type = replace(&mut self.current_function, function_type);
         self.begin_scope();
         for p in &function.parameters {
-            self.declare(&p)?;
-            self.define(&p);
+            self.declare(p)?;
+            self.define(p);
         }
 
         for statement in &function.body {
-            self.resolve_statement(&statement)?;
+            self.resolve_statement(statement)?;
         }
 
         self.end_scope();
@@ -170,6 +168,11 @@ impl Resolver {
                 ref left,
                 ref right,
                 ..
+            }
+            | Expr::Logical {
+                ref left,
+                ref right,
+                ..
             } => {
                 self.resolve_expr(left)?;
                 self.resolve_expr(right)?;
@@ -188,32 +191,14 @@ impl Resolver {
                 Ok(())
             }
 
-            Expr::Grouping {
-                ref expression,
-                ..
-            } => {
+            Expr::Grouping { ref expression, .. } => {
                 self.resolve_expr(expression)?;
                 Ok(())
             }
 
-            Expr::Literal {
-                ..
-            } => Ok(()),
+            Expr::Literal { .. } => Ok(()),
 
-            Expr::Logical {
-                ref left,
-                ref right,
-                ..
-            } => {
-                self.resolve_expr(left)?;
-                self.resolve_expr(right)?;
-                Ok(())
-            }
-
-            Expr::Unary {
-                ref right,
-                ..
-            } => {
+            Expr::Unary { ref right, .. } => {
                 self.resolve_expr(right)?;
                 Ok(())
             }
@@ -231,7 +216,7 @@ impl Resolver {
     fn resolve_local(&mut self, expr: &Expr, name: &Token) {
         for (i, scope) in self.scopes.iter_mut().enumerate().rev() {
             if scope.contains_key(&name.lexeme) {
-                self.interpreter.resolve(&expr, i);
+                self.interpreter.resolve(expr, i);
                 return;
             }
         }

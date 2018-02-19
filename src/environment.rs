@@ -53,7 +53,7 @@ impl Environment {
 
     pub fn get_at(&mut self, idx: usize, name: &Token) -> Result<LoxValue, Error> {
         let lexeme = name.lexeme.clone();
-        let stack_frame = self.stack.get(idx).unwrap();
+        let stack_frame = &self.stack[idx];
 
         Ok(stack_frame.borrow_mut().get(&lexeme).unwrap().to_owned())
     }
@@ -70,7 +70,7 @@ impl Environment {
         }
     }
 
-    pub fn assign(&mut self, name: Token, value: LoxValue) -> Result<LoxValue, Error> {
+    pub fn assign(&mut self, name: &Token, value: LoxValue) -> Result<LoxValue, Error> {
         let lexeme = name.lexeme.clone();
         match self.find_frame_for_var(&lexeme) {
             Some(stack_frame) => {
@@ -84,9 +84,14 @@ impl Environment {
         }
     }
 
-    pub fn assign_at(&mut self, idx: usize, name: &Token, value: LoxValue) -> Result<LoxValue, Error> {
+    pub fn assign_at(
+        &mut self,
+        idx: usize,
+        name: &Token,
+        value: LoxValue,
+    ) -> Result<LoxValue, Error> {
         let lexeme = name.lexeme.clone();
-        let stack_frame = self.stack.get(idx).unwrap();
+        let stack_frame = &self.stack[idx];
 
         stack_frame.borrow_mut().insert(lexeme, value.to_owned());
         Ok(value)
