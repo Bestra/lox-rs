@@ -1,10 +1,6 @@
 use lox_value::LoxValue;
 use std::fmt;
 use interpreter::{Error, Interpreter};
-use std::time::{SystemTime, UNIX_EPOCH};
-use ast::FunctionDeclaration;
-use environment::Environment;
-use std::mem::replace;
 pub trait LoxCallable: fmt::Debug {
     fn call(
         &self,
@@ -18,86 +14,5 @@ pub trait LoxCallable: fmt::Debug {
 impl fmt::Display for LoxCallable {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<fn {}>", self.name())
-    }
-}
-
-#[derive(Debug)]
-pub struct Clock;
-impl LoxCallable for Clock {
-    fn call(
-        &self,
-        _interpreter: &mut Interpreter,
-        _arguments: Vec<LoxValue>,
-    ) -> Result<LoxValue, Error> {
-        let t = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        Ok(LoxValue::Number(t as f64))
-    }
-
-    fn arity(&self) -> usize {
-        0
-    }
-
-    fn name(&self) -> &str {
-        "clock"
-    }
-}
-
-#[derive(Debug)]
-pub struct LoxFunction {
-    declaration: FunctionDeclaration,
-    closure: Environment,
-}
-
-impl LoxFunction {
-    pub fn new(declaration: FunctionDeclaration, env: &Environment) -> LoxFunction {
-        let closure = Environment::from(env);
-        LoxFunction {
-            declaration,
-            closure,
-        }
-    }
-}
-
-impl LoxCallable for LoxFunction {
-    fn call(
-        &self,
-        interpreter: &mut Interpreter,
-        arguments: Vec<LoxValue>,
-    ) -> Result<LoxValue, Error> {
-        // we need to evaluate the function in the context of its closure,
-        // not whatever the interpreter's current environment is.
-        let old_env = replace(
-            &mut interpreter.environment,
-            Environment::from(&self.closure),
-        );
-
-        interpreter.environment.push();
-        for (p, arg) in self.declaration
-            .parameters
-            .iter()
-            .zip(arguments.into_iter())
-        {
-            interpreter.environment.define(p.lexeme.clone(), arg);
-        }
-
-        let ret = match interpreter.execute_block(&self.declaration.body) {
-            Ok(_) => Ok(LoxValue::Nil),
-            Err(Error::Return(v)) => Ok(v),
-            Err(e) => Err(e),
-        };
-        interpreter.environment.pop();
-
-        // swap the environment back
-        interpreter.environment = old_env;
-        ret
-    }
-    fn arity(&self) -> usize {
-        self.declaration.parameters.len()
-    }
-    fn name(&self) -> &str {
-        &self.declaration.name.lexeme
     }
 }
