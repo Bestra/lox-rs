@@ -1,4 +1,5 @@
-use token::{LoxValue, Token, TokenType};
+use token::{Token, TokenType};
+use lox_value::LoxValue;
 use ast::{Expr, FunctionDeclaration, Program, Statement};
 
 #[derive(Debug)]

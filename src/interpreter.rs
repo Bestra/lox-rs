@@ -1,6 +1,7 @@
 use ast::{Expr, Program, Statement};
 use std::fmt;
-use token::{LoxValue, Token, TokenType};
+use token::{Token, TokenType};
+use lox_value::LoxValue;
 use lox_callable::{Clock, LoxCallable, LoxFunction};
 use environment::Environment;
 use std::rc::Rc;

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use token::{LoxValue, Token};
+use token::{Token};
+use lox_value::LoxValue;
 use interpreter::Error;
 use std::cell::RefCell;
 use std::rc::Rc;

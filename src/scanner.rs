@@ -1,6 +1,7 @@
 use std::process;
 use std::str::FromStr;
-use token::{LoxValue, Token, TokenType};
+use token::{Token, TokenType};
+use lox_value::LoxValue;
 
 fn is_digit(c: char) -> bool {
     match c {

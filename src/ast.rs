@@ -1,4 +1,5 @@
-use token::{LoxValue, Token};
+use token::{Token};
+use lox_value::LoxValue;
 use std::hash::{Hash, Hasher};
 use std::cmp::{Eq, PartialEq};
 #[derive(Debug, Clone)]

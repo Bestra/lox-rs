@@ -1,4 +1,4 @@
-use token::LoxValue;
+use lox_value::LoxValue;
 use std::fmt;
 use interpreter::{Error, Interpreter};
 use std::time::{SystemTime, UNIX_EPOCH};
