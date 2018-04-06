@@ -52,9 +52,9 @@ impl Expr {
         }
     }
 
-    pub fn string_id(&self) -> String {
+    pub fn hash_key(&self) -> usize {
         let t = self.token();
-        format!("{:?} {:?}", t.token_type, t.position)
+        t.position
     }
 }
 

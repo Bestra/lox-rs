@@ -20,7 +20,7 @@ type IResult<T> = Result<T, Error>;
 
 pub struct Interpreter {
     pub environment: Environment,
-    locals: HashMap<String, usize>,
+    locals: HashMap<usize, usize>,
 }
 
 impl Interpreter {
@@ -110,7 +110,7 @@ impl Interpreter {
 
     // note that idx 0 would be globals
     pub fn resolve(&mut self, e: &Expr, idx: usize) {
-        self.locals.insert(e.string_id(), idx);
+        self.locals.insert(e.hash_key(), idx);
     }
 
     pub fn execute_block(&mut self, statements: &[Statement]) -> IResult<()> {
@@ -132,7 +132,7 @@ impl Interpreter {
                 ref value,
             } => {
                 let val = self.evaluate(&*value)?;
-                let idx = self.locals.get(&e.string_id()).unwrap_or(&0);
+                let idx = self.locals.get(&e.hash_key()).unwrap_or(&0);
                 self.environment.assign_at(*idx, &name.clone(), val)
             }
             Expr::Call {
@@ -248,7 +248,7 @@ impl Interpreter {
 
     fn look_up_variable(&mut self, name: &Token, e: &Expr) -> Result<LoxValue, Error> {
         // if locals don't have the expr then it must be a global (top of the environment stack)
-        let idx = self.locals.get(&e.string_id()).unwrap_or(&0);
+        let idx = self.locals.get(&e.hash_key()).unwrap_or(&0);
         self.environment.get_at(*idx, name)
     }
 }
